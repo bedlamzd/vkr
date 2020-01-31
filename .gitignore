@@ -1,0 +1,9 @@
+/.idea
+/venv
+/files
+*.ini
+*.mp4
+*.png
+*.txt
+*.jpg
+*.dxf

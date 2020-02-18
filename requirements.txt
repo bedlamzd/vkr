@@ -1,0 +1,5 @@
+numpy
+opencv-python
+ezdxf
+open3d-python
+imutils

@@ -950,13 +950,25 @@ def camera_calibration(video,  # видео с которого брать ка�
 
 
 def find_camera_pose(rvec, tvec):
-    R = cv2.Rodrigues(rvec)[0].T  # матрица поворота мира относительно камеры
-    pos = -R @ tvec  # координаты камеры относительно центра мира
-    roll = np.arctan2(-R[2, 1], R[2, 2])
-    pitch = np.arcsin(R[2, 0])
-    yaw = np.arctan2(-R[1, 0], R[0, 0])
-    return pos.reshape(3, ), np.array((roll, pitch, yaw))
+    """
+    Преобразует вектор поворота (ГСК) в матрицу поворота (КСК) и перенос (ГСК) в перенос (КСК)
+    """
+    rot_mtx = cv2.Rodrigues(rvec)[0].T  # матрица поворота мира относительно камеры
+    cam_coord = -rot_mtx @ tvec  # координаты камеры относительно центра мира
+    return cam_coord.reshape(3, ), rot_mtx
 
+def rot2euler(R):
+    sy = sqrt(R[0, 0] ** 2 + R[1, 0] ** 2)
+    singular = sy < 1e-6
+    if not singular:
+        roll = np.arctan2(R[2, 1], R[2, 2])
+        pitch = np.arctan2(-R[2, 0], sy)
+        yaw = np.arctan2(R[1, 0], R[0, 0])
+    else:
+        roll = np.arctan2(R[1, 2], R[1, 1])
+        pitch = np.arctan2(-R[2, 0], sy)
+        yaw = 0
+    return np.array([roll, pitch, yaw])
 
 def camera_pose_img(img, mtx,  # изображение с шахматкой и матрица параметров камеры
                     grid, square_size=1, first_corner_coord=(0, 0),

@@ -11,7 +11,7 @@ from dataclasses import dataclass, field
 import imutils
 from ezdxf.math.vector import Vector
 import cv2
-from typing import Union, Optional, Tuple
+from typing import Union, Optional, Tuple, Iterable
 from utilities import Error, mid_idx, print_objects
 import globalValues
 from globalValues import get_settings_values, settings_sections
@@ -187,6 +187,37 @@ def checker(coords, height, width=None, gaps=None, n: int = None, tol: float = 0
         return False, None
 
 
+def find_local_coords(laser: np.ndarray, center_point: Iterable[float, float] = (319, 239),
+                      work_height: float = 150, alpha: float = pi / 6,
+                      focal_length: Union[Tuple[float, float], float] = 580):
+    u0, v0 = center_point
+    fx, fy = (focal_length, focal_length) if isinstance(focal_length, (int, float)) else focal_length[:2]
+    dy = laser - v0
+    dx = np.mgrid[laser.size] - u0
+    h = work_height * dy / (dy + fy * tan(alpha))
+    x = (work_height - h) * dx / fx
+    y = h * tan(alpha)
+    z = work_height - h
+    return np.column_stack([x, y, z])
+
+
+def find_coords2(frame_idx: int, laser: np.ndarray, zero_level: np.ndarray,
+                 frame_shape: Tuple = (480, 640),
+                 mirrored: bool = False, reverse: bool = False,
+                 distance_camera2laser: float = 94,
+                 camera_height: float = 150,
+                 camera_shift: float = 113,
+                 camera_angle: float = pi / 6,
+                 camera_angle_2: float = 1.7 * pi / 180,
+                 focal_length: float = 2.9,
+                 pixel_size: float = 0.005,
+                 rotmtx: np.ndarray = np.eye(3),
+                 **kwargs) -> np.ndarray:
+    center_point = [x // 2 - 1 for x in frame_shape[:2:-1]]
+
+    return rotmtx @ find_local_coords(laser, center_point, camera_height, camera_angle, focal_length / pixel_size)
+
+
 def find_coords(frame_idx: int, laser: np.ndarray, zero_level: np.ndarray,
                 frame_shape: Tuple = (480, 640),
                 mirrored: bool = False, reverse: bool = False,
@@ -196,7 +227,9 @@ def find_coords(frame_idx: int, laser: np.ndarray, zero_level: np.ndarray,
                 camera_angle: float = pi / 6,
                 camera_angle_2: float = 1.7 * pi / 180,
                 focal_length: float = 2.9,
-                pixel_size: float = 0.005, **kwargs) -> np.ndarray:
+                pixel_size: float = 0.005,
+                rotmtx: np.ndarray = np.eye(3),
+                **kwargs) -> np.ndarray:
     """
     Расчёт физических координат точек по их положению в кадре и положению нулевой линии
 
@@ -250,7 +283,7 @@ def find_coords(frame_idx: int, laser: np.ndarray, zero_level: np.ndarray,
     z = camera_height * sin(theta - gamma) / (sin(camera_angle + theta) * cos(camera_angle + gamma))  # высоты
     y = (camera_height - z * (camera_height > z)) * dpx / (focal_length * cos(camera_angle))  # массив Y координат
     y = camera_shift + y
-    x = frame_idx * kx + camera_height * tan(camera_angle + gamma) - distance_camera2laser  # массив X координат
+    x = frame_idx * kx + (camera_height * tan(camera_angle + gamma) - distance_camera2laser)  # массив X координат
     x = x if not reverse else - x  # развернуть если скан наоборот
     return (R @ np.column_stack([x, y, z]).T).T if camera_angle_2 else np.column_stack([x, y, z])
 

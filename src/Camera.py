@@ -4,7 +4,9 @@ from typing import Optional
 from imutils import rotate_bound
 import cv2
 from cv2 import VideoCapture, rotate, ROTATE_180
-from typing import Tuple, List
+from typing import Tuple, List, Iterable
+from utilities import Error
+import configparser
 
 
 def find_laser_center(p=(0, 0), m=(0, 0), n=(0, 0)) -> Tuple[float, float]:
@@ -59,30 +61,78 @@ def predict_laser(img: np.ndarray, row_start=0, row_stop=None) -> np.ndarray:
 
 
 class Camera:
-    def __init__(self, *, focal_length=None, pixel_size=1, frame_size=(480, 640), principal_point=None, mtx=None):
-        self.f = focal_length  # фокусное расстояние
-        self.pixel_size = pixel_size  # размер пикселя
-        self.frame_size = frame_size
-        self.frame_width = frame_size[0]
-        self.frame_height = frame_size[1]
-        self.u0 = self.frame_width // 2 - 1
-        self.v0 = self.frame_height // 2 - 1
-        self.matrix = mtx or np.array([[self.f / self.pixel_size, 0, self.frame_width // 2 - 1],
-                                       [0, self.f / self.frame_height],
-                                       [0, 0, 1]])
+    """
+    A class representing a camera
+
+    :ivar mtx: camera intrinsic matrix [[fx,  0, u0],
+                                        [ 0, fy, v0],
+                                        [ 0,  0,  1]]
+    :type mtx: np.ndarray
+    :ivar rot_mtx: rotation matrix from camera coordinate system (CCS) to global
+    :type rot_mtx: np.ndarray
+    :ivar tvec: translation vector, camera coordinates in GCS
+    :type tvec: np.ndarray
+    :ivar roi: region of interest in camera view ((x0,y0),(x1,y1))
+    :type roi: Iterable
+    :ivar ksize: kernel size for gaussian blur
+    :type ksize: int
+    :ivar sigma: sigma parameter for gaussian blur
+    :type sigma: float
+    :ivar threshold: threshold value
+    :type threshold: float
+    """
+
+    def __init__(self):
+        self.mtx = np.array([[self.fx, 0, self.u0],
+                             [0, self.fy, self.v0],
+                             [0, 0, 1]])
         self.rot_mtx = np.eye(3)
         self.tvec = np.array([0, 0, 0])
-        self._cap = None  # type: Optional[VideoCapture]
-        self.roi = None  # ((x0, x1), (y0,y1))
+        self.roi = ((0, 0), (-1, -1))  # ((x0, y0), (x1,y1))
         self.ksize = 29
         self.sigma = 4.45
-        self.thresh = 0
+        self.threshold = 0
+        self._cap = None  # type: Optional[VideoCapture]
+        self._frame_size = 0
+        self._frame_width = 0
+        self._frame_height = 0
 
-    def read_params(self, file):
-        pass
+    def read_settings(self, file):
+        from os.path import splitext
+        _, ext = splitext(file)
+        if ext == '.json':
+            import json
+            with open(file) as f:
+                jsn = json.load(f)
+            for key in vars(self):
+                if key in jsn:
+                    setattr(self, key, jsn[key])
+
+        elif ext == '.ini':
+            import configparser
 
     def find_pose(self, img, grid, **kwargs):
         pass
+
+    @property
+    def u0(self):
+        return self.mtx[0, 2]
+
+    @property
+    def v0(self):
+        return self.mtx[1, 2]
+
+    @property
+    def fx(self):
+        return self.mtx[0, 0]
+
+    @property
+    def fy(self):
+        return self.mtx[1, 1]
+
+    @property
+    def focal_length(self):
+        return (self.fx, self.fy)
 
     @property
     def cap(self) -> VideoCapture:
@@ -94,6 +144,35 @@ class Camera:
         assert isinstance(cap, VideoCapture)
         self._cap = cap
 
+    @property
+    def current_frame_idx(self):
+        return self.next_frame_idx - 1
+
+    @property
+    def next_frame_idx(self):
+        return self.cap.get(cv2.CAP_PROP_POS_FRAMES)
+
+    @property
+    def frame_width(self):
+        # TODO: записывать эти параметры в _frame_* и возвращать их?
+        return self.cap.get(cv2.CAP_PROP_FRAME_WIDTH)
+
+    @property
+    def frame_height(self):
+        return self.cap.get(cv2.CAP_PROP_FRAME_HEIGHT)
+
+    @property
+    def frame_size(self):
+        return (self.frame_width, self.frame_height)
+
+    @property
+    def fps(self):
+        return self.cap.get(cv2.CAP_PROP_FPS)
+
+    @property
+    def frame_count(self):
+        return self.cap.get(cv2.CAP_PROP_FRAME_COUNT)
+
     def prepare_img(self, img: np.ndarray):
         new_img = img.copy()
         if self.roi:
@@ -103,10 +182,10 @@ class Camera:
         return new_img
 
     def get_mask(self, img):
-        if self.thresh == 0:
+        if self.threshold == 0:
             _, mask = cv2.threshold(img, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
-        elif self.thresh > 0:
-            _, mask = cv2.threshold(img, 0, self.thresh, cv2.THRESH_BINARY)
+        elif self.threshold > 0:
+            _, mask = cv2.threshold(img, 0, self.threshold, cv2.THRESH_BINARY)
         else:
             mask = np.full_like(img, 255, np.uint8)
         return mask
@@ -117,10 +196,13 @@ class Camera:
     def apply_mask(self, img, mask):
         return cv2.bitwise_and(img, img, mask=mask)
 
-    def read(self):
+    def read_raw(self):
         if self._cap:
             ret, img = self._cap.read()
             if ret:
                 return ret, img
         else:
-            raise Exception
+            raise Error('cap is not set')
+
+    def read_proc(self):
+        img = self.read_raw()

@@ -1,5 +1,5 @@
 numpy
 opencv-python
 ezdxf
-open3d-python
+open3d
 imutils

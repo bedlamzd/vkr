@@ -1,63 +1,8 @@
 import numpy as np
-from numpy import cos, sin, tan, pi
 from typing import Optional
-from imutils import rotate_bound
 import cv2
-from cv2 import VideoCapture, rotate, ROTATE_180
+from cv2 import VideoCapture
 from typing import Tuple, List, Iterable
-from utilities import Error
-import configparser
-
-
-def find_laser_center(p=(0, 0), m=(0, 0), n=(0, 0)) -> Tuple[float, float]:
-    """
-    Аппроксимирует по трём точкам параболу и находит её вершину
-    Таким образом более точно находит позицию лазера в изображении
-
-    :param Tuple[int, float] p: предыдущая точка от m (m-1)
-    :param Tuple[int, float] m: точка с максимальной интенсивностью, (ряд, интенсивность)
-    :param Tuple[int, float] n: следующая точка от m (m+1)
-    :return: уточнённая позиция лазера с субпиксельной точностью и её аппроксимированная интенсивность
-
-    a, b, c - параметры квадратичной функции
-    y = ax^2 + bx + c
-    """
-    if p[0] == m[0] or m[0] == n[0]:  # если точки совпадают, аппроксимация не получится, вернуть среднюю
-        return m
-    a = .5 * (n[1] + p[1]) - m[1]
-    if a == 0:  # если а = 0, то получилась линия, вершины нет, вернуть среднюю точку
-        return m
-    b = (m[1] - p[1]) - a * (2 * m[0] - 1)
-    c = p[1] - p[0] * (a * p[0] + b)
-    xc = -b / (2 * a)
-    yc = a * xc ** 2 + b * xc + c
-    return xc, yc
-
-
-def predict_laser(img: np.ndarray, row_start=0, row_stop=None) -> np.ndarray:
-    # TODO: написать варианты не использующие LoG:
-    #       3. применять IGGM (возможно замедление работы алгоритма)
-    """
-
-    :param img: preprocessed img
-    :param row_start: минимально возможный ряд
-    :param row_stop: максимально возможный ряд
-    :return fine_laser: list of predicted laser subpixel positions
-    """
-    laser = np.argmax(img, axis=0)
-    laser[laser > (row_stop - row_start - 1)] = 0
-    fine_laser = np.zeros(laser.shape)
-    for column, row in enumerate(laser):
-        if row == 0:
-            continue
-        prevRow = row - 1
-        nextRow = row + 1 if row < img.shape[0] - 1 else img.shape[0] - 1
-        p1 = (1. * prevRow, 1. * img[prevRow, column])
-        p2 = (1. * row, 1. * img[row, column])
-        p3 = (1. * nextRow, 1. * img[nextRow, column])
-        fine_laser[column] = find_laser_center(p1, p2, p3)[0] + row_start
-    fine_laser[fine_laser > row_stop - 1] = row_stop - 1
-    return fine_laser
 
 
 class Camera:
@@ -68,12 +13,14 @@ class Camera:
                                         [ 0, fy, v0],
                                         [ 0,  0,  1]]
     :type mtx: np.ndarray
+    :ivar roi: region of interest in camera view (x, y, w, h)
+    :type roi: Iterable
+    :ivar dist_coef: distortion coefficients of camera
+    :type dist_coef: np.ndarray
     :ivar rot_mtx: rotation matrix from camera coordinate system (CCS) to global
     :type rot_mtx: np.ndarray
     :ivar tvec: translation vector, camera coordinates in GCS
     :type tvec: np.ndarray
-    :ivar roi: region of interest in camera view ((x0,y0),(x1,y1))
-    :type roi: Iterable
     :ivar ksize: kernel size for gaussian blur
     :type ksize: int
     :ivar sigma: sigma parameter for gaussian blur
@@ -82,20 +29,216 @@ class Camera:
     :type threshold: float
     """
 
-    def __init__(self):
-        self.mtx = np.array([[self.fx, 0, self.u0],
-                             [0, self.fy, self.v0],
-                             [0, 0, 1]])
-        self.rot_mtx = np.eye(3)
-        self.tvec = np.array([0, 0, 0])
-        self.roi = ((0, 0), (-1, -1))  # ((x0, y0), (x1,y1))
-        self.ksize = 29
-        self.sigma = 4.45
-        self.threshold = 0
+    def __init__(self, *,
+                 mtx: Optional[np.ndarray] = None,
+                 roi: Optional[Iterable] = None,
+                 dist_coef: Optional[np.ndarray] = None,
+                 rot_mtx: Optional[np.ndarray] = None,
+                 tvec: Optional[np.ndarray] = None,
+                 ksize: int = 3,
+                 sigma: float = 0,
+                 threshold: float = 0,
+                 colored: bool = False,
+                 cap: Optional[VideoCapture] = None):
+        assert mtx is None or (isinstance(mtx, np.ndarray) and mtx.shape == (3, 3))
+        assert dist_coef is None or isinstance(dist_coef, np.ndarray)
+        assert rot_mtx is None or (isinstance(rot_mtx, np.ndarray) and rot_mtx.shape == (3, 3))
+        assert tvec is None or (isinstance(tvec, np.ndarray) and tvec.shape == (3,))
+        assert cap is None or isinstance(cap, VideoCapture)
+        self.mtx = mtx
+        self.roi = roi  # (x, y, w, h)
+        self.dist_coef = dist_coef
+        self.rot_mtx = rot_mtx
+        self.tvec = tvec
+        self.ksize = ksize
+        self.sigma = sigma
+        self.threshold = threshold
+        self.colored = colored
         self._cap = None  # type: Optional[VideoCapture]
         self._frame_size = 0
         self._frame_width = 0
         self._frame_height = 0
+
+    @property
+    def u0(self) -> float:
+        """
+        Horizontal coordinate of principal point
+        """
+        assert self.mtx is not None, 'intrinsic matrix is not assigned'
+        return self.mtx[0, 2]
+
+    @property
+    def v0(self) -> float:
+        """
+        Vertical coordinate of principal point
+        """
+        assert self.mtx is not None, 'intrinsic matrix is not assigned'
+        return self.mtx[1, 2]
+
+    @property
+    def fx(self) -> float:
+        """
+        Focal length in x-pixels measure
+        """
+        assert self.mtx is not None, 'intrinsic matrix is not assigned'
+        return self.mtx[0, 0]
+
+    @property
+    def fy(self) -> float:
+        """
+        Focal length in y-pixel measure
+        """
+        assert self.mtx is not None, 'intrinsic matrix is not assigned'
+        return self.mtx[1, 1]
+
+    @property
+    def focal_length(self) -> Tuple[float, float]:
+        """
+        Focal length in both pixel measures
+        """
+        return (self.fx, self.fy)
+
+    @property
+    def cap(self) -> VideoCapture:
+        """
+        Video assosiated with camera
+        """
+        assert isinstance(self._cap, VideoCapture), 'cap is not assigned'
+        return self._cap  # type: VideoCapture
+
+    @cap.setter
+    def cap(self, cap: VideoCapture):
+        assert isinstance(cap, VideoCapture)
+        self._cap = cap
+
+    @property
+    def frame_timing(self) -> float:
+        """
+        Frame timing in seconds
+        """
+        return self.cap.get(cv2.CAP_PROP_POS_MSEC) / 1000
+
+    @property
+    def current_frame_idx(self):
+        """
+        Index of current frame in video (-1 if not started)
+        """
+        return self.next_frame_idx - 1
+
+    @property
+    def next_frame_idx(self):
+        """
+        Index of next frame in video
+        """
+        return self.cap.get(cv2.CAP_PROP_POS_FRAMES)
+
+    @next_frame_idx.setter
+    def next_frame_idx(self, idx: int):
+        """
+        Set index of next frame to read
+        :param int idx: next frame index
+        """
+        # TODO: choose between this setter and self.set_frame_idx
+        assert isinstance(idx, int), 'index should be int'
+        self.cap.set(cv2.CAP_PROP_POS_FRAMES, idx)
+
+    def set_frame_idx(self, idx: int):
+        """
+        Set index of next frame to read
+        :param int idx: next frame index
+        """
+        assert isinstance(idx, int), 'index should be int'
+        self.cap.set(cv2.CAP_PROP_POS_FRAMES, idx)
+
+    @property
+    def frame_width(self) -> int:
+        """
+        Video frame width
+        """
+        # TODO: записывать эти параметры в _frame_* и возвращать их?
+        return self.cap.get(cv2.CAP_PROP_FRAME_WIDTH)
+
+    @property
+    def frame_height(self) -> int:
+        """
+        Video frame height
+        """
+        return self.cap.get(cv2.CAP_PROP_FRAME_HEIGHT)
+
+    @property
+    def frame_size(self) -> Tuple[int, int]:
+        """
+        Video resolution
+        """
+        return (self.frame_width, self.frame_height)
+
+    @property
+    def fps(self) -> float:
+        """
+        Video framerate
+        """
+        return self.cap.get(cv2.CAP_PROP_FPS)
+
+    @property
+    def frame_count(self) -> int:
+        """
+        Total frames in video
+        """
+        return self.cap.get(cv2.CAP_PROP_FRAME_COUNT)
+
+    def get_mask(self, img: np.ndarray) -> np.ndarray:
+        if self.threshold == 0:
+            _, mask = cv2.threshold(img, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
+        elif self.threshold > 0:
+            _, mask = cv2.threshold(img, 0, self.threshold, cv2.THRESH_BINARY)
+        else:
+            mask = np.full_like(img, 255, np.uint8)
+        return mask
+
+    def apply_blur(self, img: np.ndarray, *, ksize=None, sigma=None) -> np.ndarray:
+        if ksize is None: ksize = self.ksize
+        if sigma is None: sigma = self.sigma
+        return cv2.GaussianBlur(img, (ksize, ksize), sigma)
+
+    def apply_mask(self, img: np.ndarray, mask: np.ndarray) -> np.ndarray:
+        return cv2.bitwise_and(img, img, mask=mask)
+
+    def apply_roi(self, img: np.ndarray, *, roi=None) -> np.ndarray:
+        if roi is None:
+            if self.roi is None:
+                roi = (0, 0, self.frame_width, self.frame_height)
+            else:
+                roi = self.roi
+        (x, y, w, h) = roi
+        return img[y:y + h, x:x + w].copy()
+
+    def apply_color_filt(self, img: np.ndarray, *, color_filt_vals=None) -> np.ndarray:
+        if self.colored:
+            # TODO: Some RGB/HSV processing based on color_filt_vals
+            pass
+        else:
+            img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+        return img
+
+    def prepare_img(self, img: np.ndarray) -> np.ndarray:
+        new_img = img.copy()
+        new_img = self.apply_roi(new_img)
+        new_img = self.apply_color_filt(new_img)
+        new_img_blur = self.apply_blur(new_img)
+        new_img_mask = self.get_mask(new_img_blur)
+        new_img = self.apply_mask(new_img, new_img_mask)
+        return new_img
+
+    def read_raw(self) -> Tuple[bool, np.ndarray]:
+        ret, img = self.cap.read()
+        if ret:
+            return ret, img
+
+    def read_proc(self) -> Tuple[bool, np.ndarray]:
+        ret, img = self.read_raw()
+        if ret:
+            img = self.prepare_img(img)
+        return ret, img
 
     def read_settings(self, file):
         from os.path import splitext
@@ -109,100 +252,5 @@ class Camera:
                     setattr(self, key, jsn[key])
 
         elif ext == '.ini':
+            # TODO: Чтение из .ini
             import configparser
-
-    def find_pose(self, img, grid, **kwargs):
-        pass
-
-    @property
-    def u0(self):
-        return self.mtx[0, 2]
-
-    @property
-    def v0(self):
-        return self.mtx[1, 2]
-
-    @property
-    def fx(self):
-        return self.mtx[0, 0]
-
-    @property
-    def fy(self):
-        return self.mtx[1, 1]
-
-    @property
-    def focal_length(self):
-        return (self.fx, self.fy)
-
-    @property
-    def cap(self) -> VideoCapture:
-        assert isinstance(self._cap, VideoCapture)
-        return self._cap  # type: VideoCapture
-
-    @cap.setter
-    def cap(self, cap: VideoCapture):
-        assert isinstance(cap, VideoCapture)
-        self._cap = cap
-
-    @property
-    def current_frame_idx(self):
-        return self.next_frame_idx - 1
-
-    @property
-    def next_frame_idx(self):
-        return self.cap.get(cv2.CAP_PROP_POS_FRAMES)
-
-    @property
-    def frame_width(self):
-        # TODO: записывать эти параметры в _frame_* и возвращать их?
-        return self.cap.get(cv2.CAP_PROP_FRAME_WIDTH)
-
-    @property
-    def frame_height(self):
-        return self.cap.get(cv2.CAP_PROP_FRAME_HEIGHT)
-
-    @property
-    def frame_size(self):
-        return (self.frame_width, self.frame_height)
-
-    @property
-    def fps(self):
-        return self.cap.get(cv2.CAP_PROP_FPS)
-
-    @property
-    def frame_count(self):
-        return self.cap.get(cv2.CAP_PROP_FRAME_COUNT)
-
-    def prepare_img(self, img: np.ndarray):
-        new_img = img.copy()
-        if self.roi:
-            (x0, x1), (y0, y1) = self.roi
-            new_img = new_img[x0:x1, y0:y1]
-        cv2.cvtColor(new_img, cv2.COLOR_BGR2GRAY, new_img)
-        return new_img
-
-    def get_mask(self, img):
-        if self.threshold == 0:
-            _, mask = cv2.threshold(img, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
-        elif self.threshold > 0:
-            _, mask = cv2.threshold(img, 0, self.threshold, cv2.THRESH_BINARY)
-        else:
-            mask = np.full_like(img, 255, np.uint8)
-        return mask
-
-    def get_blur(self, img):
-        return cv2.GaussianBlur(img, (self.ksize, self.ksize), self.sigma)
-
-    def apply_mask(self, img, mask):
-        return cv2.bitwise_and(img, img, mask=mask)
-
-    def read_raw(self):
-        if self._cap:
-            ret, img = self._cap.read()
-            if ret:
-                return ret, img
-        else:
-            raise Error('cap is not set')
-
-    def read_proc(self):
-        img = self.read_raw()

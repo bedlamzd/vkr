@@ -1,82 +1,140 @@
 import cv2
 import numpy as np
 from numpy import tan
-from typing import Tuple
-import Camera, Laser
+from typing import Tuple, Optional
+import Camera
 import utilities
 
 
-def find_laser_center(p=(0, 0), m=(0, 0), n=(0, 0)) -> Tuple[float, float]:
-    """
-    Аппроксимирует по трём точкам параболу и находит её вершину
-    Таким образом более точно находит позицию лазера в изображении
-
-    :param Tuple[int, float] p: предыдущая точка от m (m-1)
-    :param Tuple[int, float] m: точка с максимальной интенсивностью, (ряд, интенсивность)
-    :param Tuple[int, float] n: следующая точка от m (m+1)
-    :return: уточнённая позиция лазера с субпиксельной точностью и её аппроксимированная интенсивность
-
-    a, b, c - параметры квадратичной функции
-    y = ax^2 + bx + c
-    """
-    if p[0] == m[0] or m[0] == n[0]:  # если точки совпадают, аппроксимация не получится, вернуть среднюю
-        return m
-    a = .5 * (n[1] + p[1]) - m[1]
-    if a == 0:  # если а = 0, то получилась линия, вершины нет, вернуть среднюю точку
-        return m
-    b = (m[1] - p[1]) - a * (2 * m[0] - 1)
-    c = p[1] - p[0] * (a * p[0] + b)
-    xc = -b / (2 * a)
-    yc = a * xc ** 2 + b * xc + c
-    return xc, yc
-
-
-def predict_laser(img: np.ndarray, row_start=0, row_stop=None) -> np.ndarray:
-    # TODO: написать варианты не использующие LoG:
-    #       3. применять IGGM (возможно замедление работы алгоритма)
-    """
-
-    :param img: preprocessed img
-    :param row_start: минимально возможный ряд
-    :param row_stop: максимально возможный ряд
-    :return fine_laser: list of predicted laser subpixel positions
-    """
-    laser = np.argmax(img, axis=0)
-    laser[laser > (row_stop - row_start - 1)] = 0
-    fine_laser = np.zeros(laser.shape)
-    for column, row in enumerate(laser):
-        if row == 0:
-            continue
-        prevRow = row - 1
-        nextRow = row + 1 if row < img.shape[0] - 1 else img.shape[0] - 1
-        p1 = (1. * prevRow, 1. * img[prevRow, column])
-        p2 = (1. * row, 1. * img[row, column])
-        p3 = (1. * nextRow, 1. * img[nextRow, column])
-        fine_laser[column] = find_laser_center(p1, p2, p3)[0] + row_start
-    fine_laser[fine_laser > row_stop - 1] = row_stop - 1
-    return fine_laser
-
-
 # TODO: Методы получения лазера отдельными функциями
+# TODO: logging
+# TODO: World Frame binding via markers
 
 class Scaner:
-    def __init__(self, camera: Camera, laser: Laser, distance: float, angle: float):
-        self.h = distance / self.tg_angle
-        self.tg_angle = tan(angle)
-        self.extraction_mode = 'max_peak'
-        self.d = distance
-        self.angle = angle
-        self.velocity = 0  # mm/s
+    def __init__(self, camera: Camera,
+                 height: Optional[float] = None,
+                 angle: Optional[float] = None,
+                 velocity: Optional[float] = None,
+                 img_proc_opts: Optional[dict] = None,
+                 extraction_opts: Optional[dict] = None):
+        camera, height, angle, velocity, img_proc_opts, extraction_opts = self.check_parameters(camera=camera,
+                                                                                                height=height,
+                                                                                                angle=angle,
+                                                                                                velocity=velocity,
+                                                                                                img_proc_opts=img_proc_opts,
+                                                                                                extraction_opts=extraction_opts)
+        # config values
+        self.h = height  # config
+        self.tg_angle = tan(angle)  # config
+        self.extraction_mode = 'max_peak'  # config
+        self.velocity = velocity  # mm/s, config
         self.camera = camera
-        self.laser = laser
-        self.cloud_shape = (self.camera.cap.get(cv2.CAP_PROP_FRAME_COUNT) // 1, self.camera.frame_width)
-        self.cloud = np.zeros((*self.cloud_shape, 3))
+        self.img_proc_opts = img_proc_opts
+        self.extraction_opts = extraction_opts
+        # calculated values
+        self.d = height * self.tg_angle
+        self.angle = angle
+        self._cloud = np.zeros((self.camera.frame_count, self.camera.frame_width, 3))
+
+    @staticmethod
+    def check_parameters(camera=None, height=None, angle=None, velocity=None, img_proc_opts=None, extraction_opts=None):
+        # TODO: write parameters validation
+        if img_proc_opts is None:
+            img_proc_opts = {'mask': True, 'color_filt': True, 'roi': True}
+        else:
+            img_proc_opts = img_proc_opts
+        return camera, height, angle, velocity, img_proc_opts, extraction_opts
+
+    @classmethod
+    def from_json_file(cls, camera: Camera, filepath: str) -> 'Scaner':
+        # TODO: write json parsing
+        h, angle, extraction_mode, velocity = (filepath)
+        return Scaner(camera, h, angle, velocity)
+
+    @classmethod
+    def from_config_file(cls, camera: Camera, filepath: str) -> 'Scaner':
+        # TODO: write json parsing
+        h, angle, extraction_mode, velocity = (filepath)
+        return Scaner(camera, h, angle, velocity)
+
+    @staticmethod
+    def refine_laser_center(prev=(0, 0), middle=(0, 0), nxt=(0, 0)) -> Tuple[float, float]:
+        """
+        Аппроксимирует по трём точкам параболу и находит её вершину
+        Таким образом более точно находит позицию лазера в изображении
+
+        :param Tuple[int, float] prev: предыдущая точка от m (m-1), (ряд, интенсивность)
+        :param Tuple[int, float] middle: точка с максимальной интенсивностью, (ряд, интенсивность)
+        :param Tuple[int, float] nxt: следующая точка от m (m+1), (ряд, интенсивность)
+        :return: уточнённая позиция лазера с субпиксельной точностью и её аппроксимированная интенсивность
+
+        a, b, c - параметры квадратичной функции
+        y = ax^2 + bx + c
+        """
+        if prev[0] == middle[0] == nxt[0]:  # если точки совпадают, аппроксимация не получится, вернуть среднюю
+            return middle
+        a = .5 * (nxt[1] + prev[1]) - middle[1]
+        if a == 0:  # если а = 0, то получилась линия, вершины нет, вернуть среднюю точку
+            return middle
+        b = (middle[1] - prev[1]) - a * (2 * middle[0] - 1)
+        c = prev[1] - prev[0] * (a * prev[0] + b)
+        row = -b / (2 * a)
+        intensity = a * row ** 2 + b * row + c
+        return row, intensity
+
+    @staticmethod
+    def rough_laser(img: np.ndarray) -> np.ndarray:
+        return np.argmax(img, axis=0)
+
+    @classmethod
+    def fine_laser(cls, img: np.ndarray) -> np.ndarray:
+        laser = cls.rough_laser(img)
+        for col, row in enumerate(laser):
+            if row == 0 or row == img.shape[0] - 1:
+                continue
+            prev_row, next_row = row - 1, row + 1
+            prev = prev_row, img[prev_row, col]
+            middle = row, img[row, col]
+            nxt = next_row, img[next_row, col]
+            laser[col], _ = cls.refine_laser_center(prev, middle, nxt)
+        return laser
+
+    @classmethod
+    def max_peak(cls, img: np.ndarray) -> np.ndarray:
+        return cls.fine_laser(img)
+
+    def laplace_of_gauss(self, img: np.ndarray) -> np.ndarray:
+        assert 'ksize' in self.extraction_opts and 'sigma' in self.extraction_opts
+        ksize, sigma = self.extraction_opts['ksize'], self.extraction_opts['sigma']
+        kernel_x = cv2.getGaussianKernel(ksize=ksize, sigma=sigma)
+        kernel_y = kernel_x.T
+        gauss = -cv2.sepFilter2D(img, cv2.CV_64F, kernel_x, kernel_y)
+        log_img = cv2.Laplacian(gauss, cv2.CV_64F)
+        log_img = self.camera.apply_mask(log_img, self.camera.get_mask(self.camera.apply_blur(img)))
+        log_img[log_img < 0] = 0
+        laser = self.fine_laser(log_img)
+        return laser
+
+    @staticmethod
+    def ggm(img: np.ndarray) -> np.ndarray:
+        ggm = img.astype(np.float32) / np.amax(img)
+        laser = np.sum(ggm * (np.mgrid[:ggm.shape[0], :ggm.shape[1][0] + 1]), axis=0) / np.sum(ggm, axis=0) - 1
+        laser[np.isinf(laser) | np.isnan(laser)] = 0
+        return laser
+
+    @staticmethod
+    def iggm(img) -> np.ndarray:
+        pass
 
     @property
-    def depthmap(self):
-        return utilities.normalize(self.cloud[..., -1])
+    def depthmap(self) -> np.ndarray:
+        return utilities.normalize(self._cloud[..., -1]).copy()
 
-    def find_local_coords(self, laser: np.ndarray):
+    @property
+    def pointcloud(self) -> np.ndarray:
+        return self._cloud.copy()
+
+    def find_local_coords(self, laser: np.ndarray) -> np.ndarray:
         dy = laser - self.camera.v0
         dx = np.mgrid[laser.size] - self.camera.u0
         h = self.h * dy / (dy + self.camera.f * self.tg_angle)
@@ -85,33 +143,28 @@ class Scaner:
         z = self.h - h
         return np.column_stack([x, y, z])
 
-    def local2global_coords(self, local_coords: np.ndarray):
+    def local2global_coords(self, local_coords: np.ndarray) -> np.ndarray:
         global_coords = (self.camera.rot_mtx @ local_coords.T + self.camera.tvec).T
         return global_coords
 
-    def extract_laser(self, img) -> np.ndarray:
-        def max_peak(img) -> np.ndarray:
-            img = self.apply_mask(self.get_blur(img), self.get_mask(img))
-
-        def log() -> np.ndarray:
-            pass
-
-        def ggm() -> np.ndarray:
-            pass
-
-        modes = (max_peak, log, ggm)
-        for mode in modes:
-            if mode.__name__ == self.extraction_mode:
-                return mode(img)
-
     def scan(self):
         camera = self.camera
-        ret, img = camera.read_proc()
+        ret, img = camera.read_proc(**self.img_proc_opts)
         while ret:
-            laser = self.extract_laser(img)
+            laser = getattr(self, self.extraction_mode)(img)
+            # laser = self.extract_laser(img)
             local_coords = self.find_local_coords(laser)
             global_coords = self.local2global_coords(local_coords)
-            self.cloud[camera.current_frame_idx] = global_coords
+            self._cloud[camera.current_frame_idx] = global_coords
             camera.tvec[0] += camera.current_frame_idx / camera.fps * self.velocity  # using FPS
-            # camera.tvec[0] += camera.frame_timing*self.velocity # using timing
+            # camera.tvec[0] += camera.frame_timing * self.velocity # using timing
             ret, img = camera.read_proc()
+
+
+def scan(videopath, cameraconfig, scanerconfig):
+    cap = cv2.VideoCapture(videopath)
+    camera = Camera.Camera.from_json_file(cameraconfig, cap)
+    scaner = Scaner.from_json_file(camera, scanerconfig)
+    scaner.scan()
+    depthmap = scaner.depthmap
+    pointcloud = scaner.pointcloud

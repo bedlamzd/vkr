@@ -5,6 +5,7 @@ from cv2 import VideoCapture
 from typing import Tuple, List, Iterable
 
 
+# TODO: logging
 class Camera:
     """
     A class representing a camera
@@ -29,7 +30,7 @@ class Camera:
     :type threshold: float
     """
 
-    def __init__(self, *,
+    def __init__(self,
                  mtx: Optional[np.ndarray] = None,
                  roi: Optional[Iterable] = None,
                  dist_coef: Optional[np.ndarray] = None,
@@ -58,6 +59,32 @@ class Camera:
         self._frame_size = 0
         self._frame_width = 0
         self._frame_height = 0
+
+    @classmethod
+    def from_json_file(cls, filepath: str, cap: Optional[VideoCapture] = None) -> 'Camera':
+        # TODO: write json parsing
+        mtx, roi, dist_coef, rot_mtx, tvec, ksize, sigma, threshold, colored = (filepath)
+        return Camera(mtx, roi, dist_coef, rot_mtx, tvec, ksize, sigma, threshold, colored, cap)
+
+    @classmethod
+    def from_config_file(cls, filepath: str, cap: Optional[VideoCapture] = None) -> 'Camera':
+        # TODO: write json parsing
+        mtx, roi, dist_coef, rot_mtx, tvec, ksize, sigma, threshold, colored = (filepath)
+        return Camera(mtx, roi, dist_coef, rot_mtx, tvec, ksize, sigma, threshold, colored, cap)
+
+    @staticmethod
+    def check_parameters(mtx: Optional[np.ndarray] = None,
+                         roi: Optional[Iterable] = None,
+                         dist_coef: Optional[np.ndarray] = None,
+                         rot_mtx: Optional[np.ndarray] = None,
+                         tvec: Optional[np.ndarray] = None,
+                         ksize: int = 3,
+                         sigma: float = 0,
+                         threshold: float = 0,
+                         colored: bool = False,
+                         cap: Optional[VideoCapture] = None):
+        # TODO: write parameters validation
+        pass
 
     @property
     def u0(self) -> float:
@@ -96,7 +123,7 @@ class Camera:
         """
         Focal length in both pixel measures
         """
-        return (self.fx, self.fy)
+        return self.fx, self.fy
 
     @property
     def cap(self) -> VideoCapture:
@@ -170,7 +197,7 @@ class Camera:
         """
         Video resolution
         """
-        return (self.frame_width, self.frame_height)
+        return self.frame_width, self.frame_height
 
     @property
     def fps(self) -> float:
@@ -196,11 +223,14 @@ class Camera:
         return mask
 
     def apply_blur(self, img: np.ndarray, *, ksize=None, sigma=None) -> np.ndarray:
-        if ksize is None: ksize = self.ksize
-        if sigma is None: sigma = self.sigma
+        if ksize is None:
+            ksize = self.ksize
+        if sigma is None:
+            sigma = self.sigma
         return cv2.GaussianBlur(img, (ksize, ksize), sigma)
 
-    def apply_mask(self, img: np.ndarray, mask: np.ndarray) -> np.ndarray:
+    @staticmethod
+    def apply_mask(img: np.ndarray, mask: np.ndarray) -> np.ndarray:
         return cv2.bitwise_and(img, img, mask=mask)
 
     def apply_roi(self, img: np.ndarray, *, roi=None) -> np.ndarray:
@@ -220,13 +250,19 @@ class Camera:
             img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
         return img
 
-    def prepare_img(self, img: np.ndarray) -> np.ndarray:
+    def prepare_img(self, img: np.ndarray, *,
+                    roi=True,
+                    color_filt=True,
+                    mask=True) -> np.ndarray:
         new_img = img.copy()
-        new_img = self.apply_roi(new_img)
-        new_img = self.apply_color_filt(new_img)
-        new_img_blur = self.apply_blur(new_img)
-        new_img_mask = self.get_mask(new_img_blur)
-        new_img = self.apply_mask(new_img, new_img_mask)
+        if roi:
+            new_img = self.apply_roi(new_img)
+        if color_filt:
+            new_img = self.apply_color_filt(new_img)
+        if mask:
+            new_img_blur = self.apply_blur(new_img)
+            new_img_mask = self.get_mask(new_img_blur)
+            new_img = self.apply_mask(new_img, new_img_mask)
         return new_img
 
     def read_raw(self) -> Tuple[bool, np.ndarray]:

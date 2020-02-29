@@ -35,7 +35,7 @@ def show_img(img, winname='image', exit_key=27):
     cv2.destroyAllWindows()  # завершить процессы
 
 
-def normalize(img, value=1):
+def normalize(img: np.ndarray, value=1) -> np.ndarray:
     array = img.copy().astype(np.float64)
     array = (array - array.min()) / (array.max() - array.min()) * value
     return array
@@ -957,6 +957,7 @@ def find_camera_pose(rvec, tvec):
     cam_coord = -rot_mtx @ tvec  # координаты камеры относительно центра мира
     return cam_coord.reshape(3, ), rot_mtx
 
+
 def rot2euler(R):
     sy = sqrt(R[0, 0] ** 2 + R[1, 0] ** 2)
     singular = sy < 1e-6
@@ -969,6 +970,7 @@ def rot2euler(R):
         pitch = np.arctan2(-R[2, 0], sy)
         yaw = 0
     return np.array([roll, pitch, yaw])
+
 
 def camera_pose_img(img, mtx,  # изображение с шахматкой и матрица параметров камеры
                     grid, square_size=1, first_corner_coord=(0, 0),

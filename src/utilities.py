@@ -50,7 +50,7 @@ def show_height_map(height_map: np.ndarray):
     :param height_map: карта высот
     """
     pcd = get_pcd_of_height_map(height_map)
-    open3d.draw_geometries_with_editing([pcd])
+    open3d.visualization.draw_geometries_with_editing([pcd])
 
 
 def get_pcd_of_height_map(height_map: np.ndarray) -> open3d.geometry.PointCloud:
@@ -61,7 +61,7 @@ def get_pcd_of_height_map(height_map: np.ndarray) -> open3d.geometry.PointCloud:
     :return: облако точек
     """
     pcd = open3d.geometry.PointCloud()
-    pcd.points = open3d.Vector3dVector(height_map.copy().reshape(height_map.size // 3, 3))
+    pcd.points = open3d.utility.Vector3dVector(height_map.copy().reshape(height_map.size // 3, 3))
     return pcd
 
 

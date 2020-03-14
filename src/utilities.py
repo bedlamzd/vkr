@@ -16,6 +16,8 @@ import open3d
 import imutils
 from numpy import arctan, sqrt, tan, arccos, pi
 from ezdxf.math.vector import Vector
+from sympy import symbols
+import sympy as sp
 
 """ Some tools for convenience """
 
@@ -957,6 +959,52 @@ def find_camera_pose(rvec, tvec):
     cam_coord = -rot_mtx @ tvec  # координаты камеры относительно центра мира
     return cam_coord.reshape(3, ), rot_mtx
 
+def rotx(angle, *, sympy=False):
+    if sympy:
+        angle = symbols(angle)
+        return np.array([[1, 0, 0],
+                         [0, sp.cos(angle), -sp.sin(angle)],
+                         [0, sp.sin(angle), sp.cos(angle)]])
+    return np.array([[1, 0, 0],
+                     [0, np.cos(angle), -np.sin(angle)],
+                     [0, np.sin(angle), np.cos(angle)]])
+
+
+def roty(angle, *, sympy=False):
+    if sympy:
+        angle = symbols(angle)
+        return np.array([[sp.cos(angle), 0, sp.sin(angle)],
+                         [0, 1, 0],
+                         [-sp.sin(angle), 0, sp.cos(angle)]])
+    return np.array([[np.cos(angle), 0, np.sin(angle)],
+                     [0, 1, 0],
+                     [-np.sin(angle), 0, np.cos(angle)]])
+
+
+def rotz(angle, *, sympy=False):
+    if sympy:
+        angle = symbols(angle)
+        return np.array([[sp.cos(angle), -sp.sin(angle), 0],
+                         [sp.sin(angle), sp.cos(angle), 0],
+                         [0, 0, 1]])
+    return np.array([[np.cos(angle), -np.sin(angle), 0],
+                     [np.sin(angle), np.cos(angle), 0],
+                     [0, 0, 1]])
+
+
+def roteul(phi, theta, psi, *, order='XYZ', sympy=False):
+    R1 = eval(f'rot{order[0].lower()}({str(phi) if sympy else phi}, sympy={sympy})')
+    R2 = eval(f'rot{order[1].lower()}({str(theta) if sympy else theta}, sympy={sympy})')
+    R3 = eval(f'rot{order[2].lower()}({str(psi) if sympy else psi}, sympy={sympy})')
+    return R1 @ R2 @ R3
+
+
+def rotrpy(roll, pitch, yaw, *, order='XYZ', sympy=False):
+    if order not in ['XYZ', 'ZYX']:
+        raise Exception('Not a roll pitch yaw order')
+    return roteul(yaw, pitch, roll, order=order, sympy=sympy)
+
+# def rpy2angles(R):
 
 def rot2euler(R):
     sy = sqrt(R[0, 0] ** 2 + R[1, 0] ** 2)

@@ -2,7 +2,7 @@ import cv2
 import numpy as np
 from numpy import tan
 from typing import Tuple, Optional
-import Camera
+from Camera import Camera
 import utilities
 
 
@@ -136,15 +136,16 @@ class Scaner:
 
     def find_local_coords(self, laser: np.ndarray) -> np.ndarray:
         dy = laser - self.camera.v0
-        dx = np.mgrid[laser.size] - self.camera.u0
-        h = self.h * dy / (dy + self.camera.f * self.tg_angle)
-        x = (self.h - h) * dx / self.camera.f
-        y = h * self.tg_angle
-        z = self.h - h
+        dx = np.mgrid[:laser.size] - self.camera.u0
+        tg_beta = dy / self.camera.fy
+        tg_gamma = dx / self.camera.fx
+        z = self.h * self.tg_angle / (self.tg_angle + tg_beta)
+        y = z * tg_beta
+        x = z * tg_gamma
         return np.column_stack([x, y, z])
 
     def local2global_coords(self, local_coords: np.ndarray) -> np.ndarray:
-        global_coords = (self.camera.rot_mtx @ local_coords.T + self.camera.tvec).T
+        global_coords = ((self.camera.rot_mtx @ local_coords.T).T + self.camera.tvec)
         return global_coords
 
     def scan(self):
@@ -152,12 +153,11 @@ class Scaner:
         ret, img = camera.read_proc(**self.img_proc_opts)
         while ret:
             laser = getattr(self, self.extraction_mode)(img)
-            # laser = self.extract_laser(img)
             local_coords = self.find_local_coords(laser)
             global_coords = self.local2global_coords(local_coords)
             self._cloud[camera.current_frame_idx] = global_coords
-            camera.tvec[0] += camera.current_frame_idx / camera.fps * self.velocity  # using FPS
-            # camera.tvec[0] += camera.frame_timing * self.velocity # using timing
+            camera.tvec[0] += self.velocity / camera.fps # using FPS
+            # camera.tvec[0] += camera.frame_timing * self.velocity - camera.tvec[0] # using timing
             ret, img = camera.read_proc()
 
 

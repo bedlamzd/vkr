@@ -1,0 +1,19 @@
+{
+  "mtx": [
+    [],
+    [],
+    []
+  ],
+  "roi": [],
+  "dist_coef": [],
+  "rot_mtx": [
+    [],
+    [],
+    []
+  ],
+  "tvec": [],
+  "ksize": 0,
+  "sigma": 0,
+  "threshold": 0,
+  "colored": false
+}

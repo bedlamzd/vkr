@@ -993,9 +993,10 @@ def rotz(angle, *, sympy=False):
 
 
 def roteul(phi, theta, psi, *, order='XYZ', sympy=False):
-    R1 = eval(f'rot{order[0].lower()}({str(phi) if sympy else phi}, sympy={sympy})')
-    R2 = eval(f'rot{order[1].lower()}({str(theta) if sympy else theta}, sympy={sympy})')
-    R3 = eval(f'rot{order[2].lower()}({str(psi) if sympy else psi}, sympy={sympy})')
+    rot = {'X': rotx, 'Y': roty, 'Z': rotz}
+    R1 = rot[order[0]](phi, sympy=sympy)
+    R2 = rot[order[1]](theta, sympy=sympy)
+    R3 = rot[order[2]](psi, sympy=sympy)
     return R1 @ R2 @ R3
 
 

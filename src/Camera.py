@@ -157,7 +157,7 @@ class Camera:
         """
         Index of next frame in video
         """
-        return self.cap.get(cv2.CAP_PROP_POS_FRAMES)
+        return int(self.cap.get(cv2.CAP_PROP_POS_FRAMES))
 
     @next_frame_idx.setter
     def next_frame_idx(self, idx: int):
@@ -183,14 +183,14 @@ class Camera:
         Video frame width
         """
         # TODO: записывать эти параметры в _frame_* и возвращать их?
-        return self.cap.get(cv2.CAP_PROP_FRAME_WIDTH)
+        return int(self.cap.get(cv2.CAP_PROP_FRAME_WIDTH))
 
     @property
     def frame_height(self) -> int:
         """
         Video frame height
         """
-        return self.cap.get(cv2.CAP_PROP_FRAME_HEIGHT)
+        return int(self.cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
 
     @property
     def frame_size(self) -> Tuple[int, int]:
@@ -211,7 +211,7 @@ class Camera:
         """
         Total frames in video
         """
-        return self.cap.get(cv2.CAP_PROP_FRAME_COUNT)
+        return int(self.cap.get(cv2.CAP_PROP_FRAME_COUNT))
 
     def get_mask(self, img: np.ndarray) -> np.ndarray:
         if self.threshold == 0:

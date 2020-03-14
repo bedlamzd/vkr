@@ -41,11 +41,6 @@ class Camera:
                  threshold: float = 0,
                  colored: bool = False,
                  cap: Optional[VideoCapture] = None):
-        assert mtx is None or (isinstance(mtx, np.ndarray) and mtx.shape == (3, 3))
-        assert dist_coef is None or isinstance(dist_coef, np.ndarray)
-        assert rot_mtx is None or (isinstance(rot_mtx, np.ndarray) and rot_mtx.shape == (3, 3))
-        assert tvec is None or (isinstance(tvec, np.ndarray) and tvec.shape == (3,))
-        assert cap is None or isinstance(cap, VideoCapture)
         self.mtx = mtx
         self.roi = roi  # (x, y, w, h)
         self.dist_coef = dist_coef
@@ -84,7 +79,11 @@ class Camera:
                          colored: bool = False,
                          cap: Optional[VideoCapture] = None):
         # TODO: write parameters validation
-        pass
+        assert mtx is None or (isinstance(mtx, np.ndarray) and mtx.shape == (3, 3))
+        assert dist_coef is None or isinstance(dist_coef, np.ndarray)
+        assert rot_mtx is None or (isinstance(rot_mtx, np.ndarray) and rot_mtx.shape == (3, 3))
+        assert tvec is None or (isinstance(tvec, np.ndarray) and tvec.shape == (3,))
+        assert cap is None or isinstance(cap, VideoCapture)
 
     @property
     def u0(self) -> float:

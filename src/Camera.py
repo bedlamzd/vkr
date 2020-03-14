@@ -55,7 +55,7 @@ class Camera:
         self.sigma = sigma
         self.threshold = threshold
         self.colored = colored
-        self._cap = None  # type: Optional[VideoCapture]
+        self._cap = cap  # type: Optional[VideoCapture]
         self._frame_size = 0
         self._frame_width = 0
         self._frame_height = 0
@@ -266,9 +266,7 @@ class Camera:
         return new_img
 
     def read_raw(self) -> Tuple[bool, np.ndarray]:
-        ret, img = self.cap.read()
-        if ret:
-            return ret, img
+        return self.cap.read()
 
     def read_proc(self) -> Tuple[bool, np.ndarray]:
         ret, img = self.read_raw()

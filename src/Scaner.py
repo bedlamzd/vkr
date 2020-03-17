@@ -16,6 +16,7 @@ class Scaner:
                  angle: Optional[float] = None,
                  velocity: Optional[float] = None,
                  img_proc_opts: Optional[dict] = None,
+                 extraction_mode: str = 'max_peak',
                  extraction_opts: Optional[dict] = None):
         camera, height, angle, velocity, img_proc_opts, extraction_opts = self.check_parameters(camera=camera,
                                                                                                 height=height,
@@ -26,7 +27,7 @@ class Scaner:
         # config values
         self.h = height  # config
         self.tg_angle = tan(angle)  # config
-        self.extraction_mode = 'max_peak'  # config
+        self.extraction_mode = extraction_mode  # config
         self.velocity = velocity  # mm/s, config
         self.camera = camera
         self.img_proc_opts = img_proc_opts

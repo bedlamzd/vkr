@@ -105,8 +105,7 @@ class Scaner:
         return cls.fine_laser(img)
 
     def laplace_of_gauss(self, img: np.ndarray) -> np.ndarray:
-        assert 'ksize' in self.extraction_opts and 'sigma' in self.extraction_opts
-        ksize, sigma = self.extraction_opts['ksize'], self.extraction_opts['sigma']
+        ksize, sigma = self.extraction_opts.get('ksize', 3), self.extraction_opts.get('sigma', 0)
         kernel_x = cv2.getGaussianKernel(ksize=ksize, sigma=sigma)
         kernel_y = kernel_x.T
         gauss = -cv2.sepFilter2D(img, cv2.CV_64F, kernel_x, kernel_y)

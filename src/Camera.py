@@ -2,7 +2,7 @@ import numpy as np
 from typing import Optional
 import cv2
 from cv2 import VideoCapture
-from typing import Tuple, List, Iterable
+from typing import Tuple, List, Sequence
 
 
 # TODO: logging
@@ -15,7 +15,7 @@ class Camera:
                                         [ 0,  0,  1]]
     :type mtx: np.ndarray
     :ivar roi: region of interest in camera view (x, y, w, h)
-    :type roi: Iterable
+    :type roi: Sequence
     :ivar dist_coef: distortion coefficients of camera
     :type dist_coef: np.ndarray
     :ivar rot_mtx: rotation matrix from camera coordinate system (CCS) to global
@@ -32,7 +32,7 @@ class Camera:
 
     def __init__(self,
                  mtx: Optional[np.ndarray] = None,
-                 roi: Optional[Iterable] = None,
+                 roi: Optional[Sequence] = None,
                  dist_coef: Optional[np.ndarray] = None,
                  rot_mtx: Optional[np.ndarray] = None,
                  tvec: Optional[np.ndarray] = None,
@@ -42,7 +42,7 @@ class Camera:
                  colored: bool = False,
                  cap: Optional[VideoCapture] = None):
         self.mtx = mtx
-        self.roi = roi  # (x, y, w, h)
+        self._roi = roi  # (x, y, w, h)
         self.dist_coef = dist_coef
         self.rot_mtx = rot_mtx
         self.tvec = tvec
@@ -69,7 +69,7 @@ class Camera:
 
     @staticmethod
     def check_parameters(mtx: Optional[np.ndarray] = None,
-                         roi: Optional[Iterable] = None,
+                         roi: Optional[Sequence] = None,
                          dist_coef: Optional[np.ndarray] = None,
                          rot_mtx: Optional[np.ndarray] = None,
                          tvec: Optional[np.ndarray] = None,
@@ -123,6 +123,10 @@ class Camera:
         Focal length in both pixel measures
         """
         return self.fx, self.fy
+
+    @property
+    def roi(self) -> Tuple:
+        return (0, 0, *self.frame_size) if self._roi is None else self._roi
 
     @property
     def cap(self) -> VideoCapture:
@@ -234,10 +238,7 @@ class Camera:
 
     def apply_roi(self, img: np.ndarray, *, roi=None) -> np.ndarray:
         if roi is None:
-            if self.roi is None:
-                roi = (0, 0, self.frame_width, self.frame_height)
-            else:
-                roi = self.roi
+            roi = self.roi
         (x, y, w, h) = roi
         return img[y:y + h, x:x + w].copy()
 

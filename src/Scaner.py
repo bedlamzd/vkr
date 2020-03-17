@@ -135,6 +135,8 @@ class Scaner:
         return self._cloud.copy()
 
     def find_local_coords(self, laser: np.ndarray) -> np.ndarray:
+        laser = laser + self.camera.roi[1]
+        laser = np.pad(laser, (self.camera.roi[0], self.camera.frame_width - (self.camera.roi[0] + self.camera.roi[2])))
         dy = laser - self.camera.v0
         dx = np.mgrid[:laser.size] - self.camera.u0
         tg_beta = dy / self.camera.fy

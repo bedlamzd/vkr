@@ -118,7 +118,7 @@ class Scaner:
     @staticmethod
     def ggm(img: np.ndarray) -> np.ndarray:
         ggm = img.astype(np.float32) / np.amax(img)
-        laser = np.sum(ggm * (np.mgrid[:ggm.shape[0], :ggm.shape[1][0] + 1]), axis=0) / np.sum(ggm, axis=0) - 1
+        laser = np.sum(ggm * (np.mgrid[:ggm.shape[0], :ggm.shape[1]][0] + 1), axis=0) / np.sum(ggm, axis=0) - 1
         laser[np.isinf(laser) | np.isnan(laser)] = 0
         return laser
 

@@ -42,6 +42,7 @@ class Camera:
                  colored: bool = False,
                  cap: Optional[VideoCapture] = None):
         self.mtx = mtx
+        self.optimal_mtx = mtx
         self._roi = roi  # (x, y, w, h)
         self.dist_coef = dist_coef
         self.rot_mtx = rot_mtx
@@ -250,11 +251,17 @@ class Camera:
             img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
         return img
 
-    def prepare_img(self, img: np.ndarray, *,
+    def undistort(self, img):
+        return cv2.undistort(img, self.mtx, self.dist_coef, None, self.optimal_mtx)
+
+    def process_img(self, img: np.ndarray, *,
+                    undistort=False,
                     roi=True,
                     color_filt=True,
                     mask=True) -> np.ndarray:
         new_img = img.copy()
+        if undistort:
+            new_img = self.undistort(new_img)
         if roi:
             new_img = self.apply_roi(new_img)
         if color_filt:
@@ -268,10 +275,10 @@ class Camera:
     def read_raw(self) -> Tuple[bool, np.ndarray]:
         return self.cap.read()
 
-    def read_proc(self) -> Tuple[bool, np.ndarray]:
+    def read_processed(self, **kwargs) -> Tuple[bool, np.ndarray]:
         ret, img = self.read_raw()
         if ret:
-            img = self.prepare_img(img)
+            img = self.process_img(img, **kwargs)
         return ret, img
 
     def read_settings(self, file):

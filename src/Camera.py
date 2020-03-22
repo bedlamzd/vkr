@@ -3,6 +3,7 @@ from typing import Optional
 import cv2
 from cv2 import VideoCapture
 from typing import Tuple, List, Sequence
+import time
 
 
 # TODO: logging
@@ -281,17 +282,105 @@ class Camera:
             img = self.process_img(img, **kwargs)
         return ret, img
 
-    def read_settings(self, file):
-        from os.path import splitext
-        _, ext = splitext(file)
-        if ext == '.json':
-            import json
-            with open(file) as f:
-                jsn = json.load(f)
-            for key in vars(self):
-                if key in jsn:
-                    setattr(self, key, jsn[key])
 
-        elif ext == '.ini':
-            # TODO: Чтение из .ini
-            import configparser
+class Calibrator:
+    def __init__(self,
+                 board_size,
+                 board_coordinates=None,
+                 win_size=(5, 5),
+                 zero_zone=(-1, -1),
+                 flags=None,
+                 square_size=1,
+                 samples=10,
+                 criteria=(cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_MAX_ITER, 30, 0.01)
+                 ):
+
+        self.flags = flags
+        self.zero_zone = zero_zone
+        self.win_size = win_size
+        self.criteria = criteria
+        self.samples = samples
+
+        self.board_size = board_size
+        if not board_coordinates:
+            # if no coordinates provided assume square size as unit length and zero z-coordinate
+            board_coordinates = np.zeros((np.prod(board_size), 3), np.float32)
+            board_coordinates[:, :2] = np.mgrid[:board_size[0], :board_size[1]].T.reshape(-1, 2) * square_size
+        self.board_coordinates = board_coordinates
+
+        self.mtx = None
+        self.dist = None
+        self.new_mtx = None
+        self.roi = None
+
+    def calibrate_video(self, video: cv2.VideoCapture, delay=1, stream=False):
+        cv2.namedWindow('Calibration')
+        camera = Camera(cap=video)
+        good_samples = 0
+        obj_points = [  # 3d points in real world
+            # [first image points], [second image points], ...
+            # where points identical to board_coordinates
+        ]
+        img_points = [  # 2d points in image plane
+            # [first image points], [second image points], ...
+            # where points are corners coordinates in pixels for each image
+        ]
+        last_timestamp = -np.inf
+        frame_read, frame = camera.read_raw()
+        while frame_read and good_samples < self.samples:
+            gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+            ret, corners = cv2.findChessboardCorners(gray, self.board_size, None)
+            current_timestamp = time.time() if stream else camera.frame_timing
+            if ret and abs(current_timestamp - last_timestamp) >= delay:
+                obj_points.append(self.board_coordinates)
+                corners = cv2.cornerSubPix(gray, corners, self.win_size, self.zero_zone, self.criteria)
+                img_points.append(corners)
+                good_samples += 1
+                last_timestamp = current_timestamp
+                print(f'Sample taken. Current samples: {good_samples}')
+            if cv2.waitKey(15) == 27:
+                break
+            cv2.drawChessboardCorners(frame, self.board_size, corners, ret)
+            cv2.imshow('Calibration', frame)
+            frame_read, frame = camera.read_raw()
+        else:
+            if good_samples == 0:
+                print('No good samples. Provide better data.')
+                print('Calibration failed.')
+            else:
+                if good_samples < self.samples: print(
+                    'Fewer good samples taken than requested, calibration might be inaccurate.')
+                ret, self.mtx, self.dist, *_ = cv2.calibrateCamera(obj_points, img_points, camera.frame_size, None,
+                                                                   None)
+                print('Calibration done.')
+        cv2.destroyAllWindows()
+        return self.mtx, self.dist
+
+    def calibrate_images(self, images: List[np.ndarray]):
+        obj_points = [  # 3d points in real world
+            # [first image points], [second image points], ...
+            # where points identical to board_coordinates
+        ]
+        img_points = [  # 2d points in image plane
+            # [first image points], [second image points], ...
+            # where points are corners coordinates in pixels for each image
+        ]
+        good_samples = 0
+        for img in images:
+            gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+            ret, corners = cv2.findChessboardCorners(gray, self.board_size, None, flags=self.flags)
+            if ret:
+                obj_points.append(self.board_coordinates)
+                corners = cv2.cornerSubPix(gray, corners, self.win_size, self.zero_zone, self.criteria)
+                img_points.append(corners)
+                good_samples += 1
+                print(f'Sample taken. Current samples: {good_samples}')
+        if good_samples == 0:
+            print('No good samples. Provide better data.')
+            print('Calibration failed.')
+        else:
+            if good_samples < self.samples: print(
+                'Fewer good samples taken than requested, calibration might be inaccurate.')
+            ret, self.mtx, self.dist, *_ = cv2.calibrateCamera(obj_points, img_points, images[0].size, None, None)
+            print('Calibration done.')
+        return self.mtx, self.dist

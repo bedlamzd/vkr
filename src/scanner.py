@@ -892,3 +892,6 @@ def scan(path_to_video: str, colored: bool = False, debug=False, verbosity=0, **
 
     cap.release()
     cv2.destroyAllWindows()
+
+if __name__ == '__main__':
+    scan(r"C:\Users\bedla\YandexDisk\Диплом Борисов\Иллюстрации\Видео с камеры.mp4", start_tol=-1, extraction_mode='ggm')

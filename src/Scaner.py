@@ -158,7 +158,7 @@ class Scaner:
             local_coords = self.find_local_coords(laser)
             global_coords = self.local2global_coords(local_coords)
             self._cloud[camera.current_frame_idx] = global_coords
-            camera.tvec[0] += self.velocity / camera.fps # using FPS
+            camera.tvec[0] += self.velocity / camera.fps  # using FPS
             # camera.tvec[0] += camera.frame_timing * self.velocity - camera.tvec[0] # using timing
             ret, img = camera.read_processed()
 

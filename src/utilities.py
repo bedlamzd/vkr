@@ -887,6 +887,7 @@ def find_camera_pose(rvec, tvec):
     cam_coord = -rot_mtx @ tvec  # координаты камеры относительно центра мира
     return cam_coord.reshape(3, ), rot_mtx
 
+
 def rotx(angle, *, sympy=False):
     if sympy:
         angle = symbols(angle)
@@ -930,10 +931,13 @@ def roteul(phi, theta, psi, *, order='XYZ', sympy=False):
 
 def rotrpy(roll, pitch, yaw, *, order='XYZ', sympy=False):
     if order not in ['XYZ', 'ZYX']:
-        raise Exception('Not a roll pitch yaw order')
+        raise Exception('Not a "roll pitch yaw" order')
     return roteul(yaw, pitch, roll, order=order, sympy=sympy)
 
-# def rpy2angles(R):
+
+def rpy2angles(R):
+    pass
+
 
 def rot2euler(R):
     sy = sqrt(R[0, 0] ** 2 + R[1, 0] ** 2)

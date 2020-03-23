@@ -283,7 +283,9 @@ class Camera:
         return ret, img
 
 
-class Calibrator:
+class CameraCalibrator:
+    # TODO: extrinsic camera calibration
+    # TODO: scaner calibration
     def __init__(self,
                  board_size,
                  board_coordinates=None,
@@ -292,8 +294,14 @@ class Calibrator:
                  flags=None,
                  square_size=1,
                  samples=10,
-                 criteria=(cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_MAX_ITER, 30, 0.01)
-                 ):
+                 criteria=(cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_MAX_ITER, 30, 0.01),
+                 *,
+                 mtx=None,
+                 dist=None,
+                 new_mtx=None,
+                 roi=None,
+                 rot_mtx=np.eye(3),
+                 t_vec=np.zeros(3)):
 
         self.flags = flags
         self.zero_zone = zero_zone
@@ -308,12 +316,19 @@ class Calibrator:
             board_coordinates[:, :2] = np.mgrid[:board_size[0], :board_size[1]].T.reshape(-1, 2) * square_size
         self.board_coordinates = board_coordinates
 
-        self.mtx = None
-        self.dist = None
-        self.new_mtx = None
-        self.roi = None
+        self.mtx = mtx
+        self.dist = dist
+        self.new_mtx = new_mtx
+        self.roi = roi
+        self.rvec = rot_mtx
+        self.tvec = t_vec
 
-    def calibrate_video(self, video: cv2.VideoCapture, delay=1, stream=False):
+    @property
+    def extrinsic_matrix(self):
+        if self.rvec and self.tvec:
+            return np.column_stack([self.rvec, self.tvec])
+
+    def intrinsic_from_video(self, video: cv2.VideoCapture, delay=1, stream=False):
         cv2.namedWindow('Calibration')
         camera = Camera(cap=video)
         good_samples = 0
@@ -335,6 +350,7 @@ class Calibrator:
                 obj_points.append(self.board_coordinates)
                 corners = cv2.cornerSubPix(gray, corners, self.win_size, self.zero_zone, self.criteria)
                 img_points.append(corners)
+                frame = 255 - frame  # indicate successful shot with negative image
                 good_samples += 1
                 last_timestamp = current_timestamp
                 print(f'Sample taken. Current samples: {good_samples}')
@@ -356,7 +372,7 @@ class Calibrator:
         cv2.destroyAllWindows()
         return self.mtx, self.dist
 
-    def calibrate_images(self, images: List[np.ndarray]):
+    def intrinsic_from_images(self, images: List[np.ndarray]):
         obj_points = [  # 3d points in real world
             # [first image points], [second image points], ...
             # where points identical to board_coordinates
@@ -384,3 +400,19 @@ class Calibrator:
             ret, self.mtx, self.dist, *_ = cv2.calibrateCamera(obj_points, img_points, images[0].size, None, None)
             print('Calibration done.')
         return self.mtx, self.dist
+
+    def get_new_camera_mtx(self, image_size, alpha=1):
+        self.new_mtx, self.roi = cv2.getOptimalNewCameraMatrix(self.mtx, self.dist, image_size, alpha)
+
+    def extrinsic_from_image(self, image):
+        gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+        rot_mtx, t_vec = None, None
+        ret, corners = cv2.findChessboardCorners(gray, self.board_size)
+        if ret:
+            corners = cv2.cornerSubPix(gray, corners, self.win_size, self.zero_zone, self.criteria)
+            cv2.drawChessboardCorners(image, self.board_size, corners, ret)
+            ret, rot_mtx, t_vec = cv2.solvePnP(self.board_coordinates, corners, self.mtx, self.dist)
+        return ret, rot_mtx, t_vec
+
+    def calibrate_camera_extrinsic_from_images(self, images):
+        pass

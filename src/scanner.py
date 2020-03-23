@@ -11,7 +11,7 @@ from dataclasses import dataclass, field
 import imutils
 from ezdxf.math.vector import Vector
 import cv2
-from typing import Union, Optional, Tuple, Iterable
+from typing import Union, Optional, Tuple, Iterable, Sequence
 from utilities import Error, mid_idx, print_objects
 import globalValues
 from globalValues import get_settings_values, settings_sections
@@ -187,9 +187,9 @@ def checker(coords, height, width=None, gaps=None, n: int = None, tol: float = 0
         return False, None
 
 
-def find_local_coords(laser: np.ndarray, center_point: Iterable[float, float] = (319, 239),
+def find_local_coords(laser: np.ndarray, center_point: Sequence[float] = (319, 239),
                       work_height: float = 150, alpha: float = pi / 6,
-                      focal_length: Union[Tuple[float, float], float] = 580):
+                      focal_length: Union[Tuple[float], float] = 580):
     u0, v0 = center_point
     fx, fy = (focal_length, focal_length) if isinstance(focal_length, (int, float)) else focal_length[:2]
     dy = laser - v0

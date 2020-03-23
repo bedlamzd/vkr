@@ -1,6 +1,7 @@
 /.idea
 /venv*
-/files
+/img
+/tex/pythontex*
 *.ini
 *.mp4
 *.png
@@ -11,3 +12,6 @@
 *.gz
 *.zip
 *.rar
+*.aux
+*.log
+*.pytxcode

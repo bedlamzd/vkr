@@ -5,6 +5,68 @@ from cv2 import VideoCapture
 from typing import Tuple, List, Sequence
 import time
 
+def find_angle_of_view(view_range: int,
+                       focal: float, *,
+                       pxl_size: float = 1) -> float:
+    """
+    расчитывает угол обзора камеры
+
+    :param view_range: длинна обзора в пикселях
+    :param focal: фокусное расстояние
+    :param pxl_size: размер пикселя на матрице
+    :return: угол в радианах
+    """
+    # TODO: make it static method
+    return 2 * np.arctan(view_range * pxl_size / 2 / focal)
+
+
+def find_camera_angle(view_width: float,  # mm
+                      frame_width: int,  # pxl
+                      camera_height: float,  # mm
+                      focal: float, *,  # pxl|mm
+                      pxl_size: float = 1  # 1 if focal in pxl else proper coefficient
+                      ) -> float:
+    """
+    Вычисление угла наклона камеры от вертикали по ширине обзора камеры и
+    её высоте над поверхностью.
+
+    :param view_width: ширина обзора по центру кадра в мм
+    :param frame_width: ширина кадра в пикселях
+    :param camera_height: высота камеры над поверхностью в мм
+    :param focal: фокусное расстояние линзы
+    :param pxl_size: размер пикселя на матрице в мм
+    :return: угол наклона камеры в радианах
+    """
+    # TODO: make it static method
+    view_angle = find_angle_of_view(frame_width, focal, pxl_size=pxl_size)
+    cos_camera_angle = 2 * camera_height / view_width * np.tan(view_angle / 2)
+    camera_angle = np.arccos(cos_camera_angle)
+    return camera_angle
+
+
+def xyz2uv(xyz, mtx, rot_mtx=None, t_vec=None, *, T=None):
+    """
+    Given camera intrinsic matrix calculate image plane coordinates of a real 3d point
+    :param xyz: coordinates of a point in WSC
+    :param mtx: camera intrinsic matrix
+    :param rot_mtx: rotation matrix of a camera relative to WCS
+    :param t_vec: translation vector of a camera relative to WCS
+    :param T: full transformation from WCS to camera coordinate space (extrinsic matrix)
+    :return: uv coordinates in image plane
+    """
+    # TODO: make it static method
+    xyz = np.r_[xyz[:3], 1]
+    if T is None:
+        if rot_mtx is None:
+            rot_mtx = np.eye(3)
+        if t_vec is None:
+            t_vec = np.zeros(3)
+        T = np.column_stack([rot_mtx, t_vec])
+    uv = mtx @ T @ xyz
+    uv = uv / uv[2]
+    return uv[:2]
+
+
 
 # TODO: logging
 class Camera:

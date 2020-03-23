@@ -6,7 +6,7 @@ import imutils
 
 from typing import Union, List
 
-from tools.general import nothing
+from src.tools.general import nothing
 
 
 def generate_chessboard(square_size=30, grid=(8, 8)):

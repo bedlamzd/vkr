@@ -8,7 +8,7 @@ from numpy.polynomial.polynomial import polyvander2d, polyvander
 from ezdxf.math import Vector
 from typing import List, Union
 
-from tools.general import closed, pairwise
+from src.tools.general import closed, pairwise
 
 X, Y, Z = 0, 1, 2
 

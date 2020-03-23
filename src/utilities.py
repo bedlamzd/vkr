@@ -19,8 +19,6 @@ from ezdxf.math.vector import Vector
 from sympy import symbols
 import sympy as sp
 
-""" Some tools for convenience """
-
 # TODO: рефактор и комментарии
 
 X, Y, Z = 0, 1, 2  # переменные для более явного обращения к координатам в массиве вместо цифр

@@ -70,7 +70,7 @@ def checker(coords, height, width=None, gaps=None, n: int = None, tol: float = 0
             checkpoint, n)
 
     def make_sequence(coords, height, height_tol):
-        sequence = np.copy(coords[..., Z])
+        sequence = np.copy(coords[..., 2])
         sequence[np.abs(sequence) < height_tol] = 0
         sequence[(sequence != 0) & (np.abs(sequence - height) > height_tol)] = -a
         sequence[sequence > 0] = b

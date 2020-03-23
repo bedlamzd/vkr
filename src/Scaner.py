@@ -10,6 +10,7 @@ import utilities
 # TODO: logging
 # TODO: World Frame binding via markers
 
+
 class Scaner:
     def __init__(self, camera: Camera,
                  height: Optional[float] = None,
@@ -47,14 +48,14 @@ class Scaner:
         return camera, height, angle, velocity, img_proc_opts, extraction_opts
 
     @classmethod
-    def from_json_file(cls, camera: Camera, filepath: str) -> 'Scaner':
+    def from_json(cls, camera: Camera, filepath: str) -> 'Scaner':
         # TODO: write json parsing
         h, angle, extraction_mode, velocity = (filepath)
         return Scaner(camera, h, angle, velocity)
 
     @classmethod
-    def from_config_file(cls, camera: Camera, filepath: str) -> 'Scaner':
-        # TODO: write json parsing
+    def from_config(cls, camera: Camera, filepath: str) -> 'Scaner':
+        # TODO: write ini parsing
         h, angle, extraction_mode, velocity = (filepath)
         return Scaner(camera, h, angle, velocity)
 

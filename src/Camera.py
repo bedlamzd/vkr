@@ -58,13 +58,13 @@ class Camera:
         self._frame_height = 0
 
     @classmethod
-    def from_json_file(cls, filepath: str, cap: Optional[VideoCapture] = None) -> 'Camera':
+    def from_json(cls, filepath: str, cap: Optional[VideoCapture] = None) -> 'Camera':
         # TODO: write json parsing
         mtx, roi, dist_coef, rot_mtx, tvec, ksize, sigma, threshold, colored = (filepath)
         return Camera(mtx, roi, dist_coef, rot_mtx, tvec, ksize, sigma, threshold, colored, cap)
 
     @classmethod
-    def from_config_file(cls, filepath: str, cap: Optional[VideoCapture] = None) -> 'Camera':
+    def from_config(cls, filepath: str, cap: Optional[VideoCapture] = None) -> 'Camera':
         # TODO: write json parsing
         mtx, roi, dist_coef, rot_mtx, tvec, ksize, sigma, threshold, colored = (filepath)
         return Camera(mtx, roi, dist_coef, rot_mtx, tvec, ksize, sigma, threshold, colored, cap)

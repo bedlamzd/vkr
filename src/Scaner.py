@@ -6,7 +6,6 @@ from Camera import Camera
 import utilities
 
 
-# TODO: Методы получения лазера отдельными функциями
 # TODO: logging
 # TODO: World Frame binding via markers
 
@@ -41,6 +40,7 @@ class Scaner:
     @staticmethod
     def check_parameters(camera=None, height=None, angle=None, velocity=None, img_proc_opts=None, extraction_opts=None):
         # TODO: write parameters validation
+        # TODO: extraction mode names formatting and aliasing (e.g. 'Laplace of Gauss'|'log' -> 'laplace_of_gauss')
         if img_proc_opts is None:
             img_proc_opts = {'mask': True, 'color_filt': True, 'roi': True}
         else:

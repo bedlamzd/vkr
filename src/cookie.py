@@ -1,12 +1,14 @@
 from math import pi
 from typing import Union, List, Optional
-from utilities import X, Y, Z, find_center_and_rotation, find_contours, show_height_map, mls_height_apprx, normalize, \
-    show_img
 import numpy as np
 import cv2
 
-
 # TODO: документация и комментарии
+from tools.images import find_center_and_rotation, find_contours
+from tools.pointcloud import mls_height_apprx
+
+X, Y, Z = 0, 1, 2
+
 
 class Cookie:
     def __init__(self, height_map=None, contour_global=None, bounding_box=None, contour_center=None):

@@ -164,10 +164,10 @@ class Scaner:
             ret, img = camera.read_processed()
 
 
-def scan(videopath, cameraconfig, scanerconfig):
-    cap = cv2.VideoCapture(videopath)
-    camera = Camera.Camera.from_json_file(cameraconfig, cap)
-    scaner = Scaner.from_json_file(camera, scanerconfig)
+def scan(video_path: str, camera_config: str, scaner_config: str):
+    cap = cv2.VideoCapture(video_path)
+    camera = Camera.from_json(camera_config, cap)
+    scaner = Scaner.from_json(camera, scaner_config)
     scaner.scan()
     depthmap = scaner.depthmap
     pointcloud = scaner.pointcloud

@@ -12,12 +12,15 @@ from ezdxf.math.vector import Vector, NULLVEC
 from ezdxf.math.bspline import BSpline
 from re import findall
 import numpy as np
-import utilities
-from utilities import X, Y, Z, pairwise, apprx_point_height, triangle_area
 from numpy import cos, sin, pi
 
-
 # TODO: нарзека одновременно с расчётом Z координаты
+from tools.general import pairwise
+from tools.images import find_center_and_rotation
+from tools.math import triangle_area
+from tools.pointcloud import apprx_point_height
+
+X, Y, Z = 0, 1, 2
 
 
 class Element():
@@ -675,7 +678,7 @@ class Drawing:
                 element.slice(0.1)
                 points += element.get_points()
             points = np.asarray([list(v.vec2) for v in points], dtype=np.float32)
-            center, rotation = utilities.find_center_and_rotation(points[:, np.newaxis, :], True)
+            center, rotation = find_center_and_rotation(points[:, np.newaxis, :], True)
             return center, rotation
 
     @property

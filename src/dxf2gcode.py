@@ -9,13 +9,13 @@ import ezdxf as ez
 from typing import Union, Optional
 from gcodeGen import *
 from elements import *
-from utilities import print_objects
 import globalValues
 from globalValues import get_settings_values, settings_sections
-from scanner import find_cookies
-from cookie import Cookie
+from cookie import Cookie, find_cookies
 
 # TODO: написать логи
+from tools.general import print_objects
+
 DEFAULT_F0 = 2500  # mm/minute
 DEFAULT_F1 = 1000  # mm/minute
 DEFAULT_TABLE_HEIGHT = 30  # mm

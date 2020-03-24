@@ -10,8 +10,8 @@ import utilities
 # TODO: World Frame binding via markers
 
 
-class Scaner:
-    def __init__(self, camera: Camera,
+class Scanner:
+    def __init__(self, camera: Optional[Camera] = None,
                  height: Optional[float] = None,
                  angle: Optional[float] = None,
                  velocity: Optional[float] = None,
@@ -48,16 +48,16 @@ class Scaner:
         return camera, height, angle, velocity, img_proc_opts, extraction_opts
 
     @classmethod
-    def from_json(cls, camera: Camera, filepath: str) -> 'Scaner':
+    def from_json(cls, camera: Camera, filepath: str) -> 'Scanner':
         # TODO: write json parsing
         h, angle, extraction_mode, velocity = (filepath)
-        return Scaner(camera, h, angle, velocity)
+        return Scanner(camera, h, angle, velocity)
 
     @classmethod
-    def from_config(cls, camera: Camera, filepath: str) -> 'Scaner':
+    def from_config(cls, camera: Camera, filepath: str) -> 'Scanner':
         # TODO: write ini parsing
         h, angle, extraction_mode, velocity = (filepath)
-        return Scaner(camera, h, angle, velocity)
+        return Scanner(camera, h, angle, velocity)
 
     @staticmethod
     def refine_laser_center(prev=(0, 0), middle=(0, 0), nxt=(0, 0)) -> Tuple[float, float]:
@@ -167,7 +167,7 @@ class Scaner:
 def scan(video_path: str, camera_config: str, scaner_config: str):
     cap = cv2.VideoCapture(video_path)
     camera = Camera.from_json(camera_config, cap)
-    scaner = Scaner.from_json(camera, scaner_config)
-    scaner.scan()
-    depthmap = scaner.depthmap
-    pointcloud = scaner.pointcloud
+    scanner = Scanner.from_json(camera, scaner_config)
+    scanner.scan()
+    depthmap = scanner.depthmap
+    pointcloud = scanner.pointcloud

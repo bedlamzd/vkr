@@ -1,5 +1,4 @@
-import Scaner
-import utilities
+import Scanner
 import numpy as np
 import cv2
 import time
@@ -29,9 +28,9 @@ extraction_mode = 'ggm'
 extraction_opts = {'ksize': 29, 'sigma': 4.45}
 
 cap = cv2.VideoCapture(r"C:\Users\bedla\YandexDisk\Диплом Борисов\Иллюстрации\Видео с камеры.mp4")
-camera = Scaner.Camera(mtx=mtx, rot_mtx=rot_mtx, tvec=tvec, cap=cap, roi=roi)
-scaner = Scaner.Scaner(camera=camera, height=height, angle=angle, velocity=velocity, img_proc_opts=img_proc_opts,
-                       extraction_opts=extraction_opts, extraction_mode=extraction_mode)
+camera = Scanner.Camera(mtx=mtx, rot_mtx=rot_mtx, tvec=tvec, cap=cap, roi=roi)
+scaner = Scanner.Scanner(camera=camera, height=height, angle=angle, velocity=velocity, img_proc_opts=img_proc_opts,
+                         extraction_opts=extraction_opts, extraction_mode=extraction_mode)
 
 if __name__ == '__main__':
     start = time.time()

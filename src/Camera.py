@@ -229,15 +229,6 @@ class Camera:
         Set index of next frame to read
         :param int idx: next frame index
         """
-        # TODO: choose between this setter and self.set_frame_idx
-        assert isinstance(idx, int), 'index should be int'
-        self.cap.set(cv2.CAP_PROP_POS_FRAMES, idx)
-
-    def set_frame_idx(self, idx: int):
-        """
-        Set index of next frame to read
-        :param int idx: next frame index
-        """
         assert isinstance(idx, int), 'index should be int'
         self.cap.set(cv2.CAP_PROP_POS_FRAMES, idx)
 

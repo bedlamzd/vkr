@@ -332,6 +332,12 @@ class Camera:
             img = self.process_img(img, **kwargs)
         return ret, img
 
+    def calibrate_intrinsic(self, delay=1, stream=False, **kwargs):
+        calibrator = CameraCalibrator(**kwargs)
+        self.mtx, self.dist = calibrator.intrinsic_from_video(self.cap, delay, stream)
+        self.optimal_mtx, roi = calibrator.get_new_camera_mtx(self.frame_size)
+        self.next_frame_idx = 0
+
 
 class CameraCalibrator:
     # TODO: extrinsic camera calibration
@@ -453,6 +459,7 @@ class CameraCalibrator:
 
     def get_new_camera_mtx(self, image_size, alpha=1):
         self.new_mtx, self.roi = cv2.getOptimalNewCameraMatrix(self.mtx, self.dist, image_size, alpha)
+        return self.new_mtx, self.roi
 
     def extrinsic_from_image(self, image):
         gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)

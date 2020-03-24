@@ -5,6 +5,7 @@ from typing import Tuple, Optional
 from Camera import Camera
 from tools.general import normalize, avg
 
+from itertools import combinations
 
 
 # TODO: logging
@@ -163,6 +164,52 @@ class Scanner:
             camera.tvec[0] += self.velocity / camera.fps  # using FPS
             # camera.tvec[0] += camera.frame_timing * self.velocity - camera.tvec[0] # using timing
             ret, img = camera.read_processed()
+
+
+class ScannerCalibrator:
+    def __init__(self, scanner):
+        self.scanner = scanner
+        self.tg_alpha = 0
+        self.h = 0
+
+    @property
+    def alpha(self):
+        return np.arctan(self.tg_alpha)
+
+    def calculate_from_angles(self,
+                              h1, beta1,
+                              h2, beta2,
+                              beta0=0, r32=0, r33=1, *,
+                              rot_mtx=None):
+        tg_beta0, tg_beta1, tg_beta2 = np.tan([beta0, beta1, beta2])
+        tg_alpha, H = self.calculate_from_tangent(h1, tg_beta1, h2, tg_beta2, tg_beta0, r32, r33, rot_mtx=rot_mtx)
+        return tg_alpha, H
+
+    def calculate_from_tangent(self,
+                               h1, tg_beta1,
+                               h2, tg_beta2,
+                               tg_beta0=0, r32=0, r33=1, *,
+                               rot_mtx=None):
+        if rot_mtx:
+            r32, r33 = rot_mtx[3, 2], rot_mtx[3, 2]
+        tg_alpha = ((h1 * tg_beta1 * (tg_beta2 - tg_beta0) - h2 * tg_beta2 * (tg_beta1 - tg_beta0))
+                    / (h1 * (tg_beta2 - tg_beta0) - h2 * (tg_beta1 - tg_beta0)))
+        H = h1 * (((tg_alpha + tg_beta1) * (tg_alpha + tg_beta0))
+                  / ((tg_beta1 - tg_beta0) * (r32 * tg_alpha ** 2 - r33 * tg_alpha)))
+        return tg_alpha, H
+
+    def calibrate_from_images(self, images, heights):
+        u0, v0 = int(self.scanner.camera.u0), self.scanner.camera.v0  # optical center of an image
+        results = []  # (tg_alpha, H) pairs for each calculation
+        # tangent of the angle between laser ray and optical axis of the camera in each image
+        tg_beta = [(self.scanner.laplace_of_gauss(image)[u0] - v0) / self.scanner.camera.fy for image in images]
+        tg_beta0 = tg_beta[0]  # tangent for zero level
+        for (tg_betai, hi), (tg_betak, hk) in combinations(zip(tg_beta[1:], heights[1:]), 2):
+            results.append(self.calculate_from_tangent(hi, tg_betai,
+                                                       hk, tg_betak,
+                                                       tg_beta0, rot_mtx=self.scanner.camera.rot_mtx))
+        self.tg_alpha, self.h = [avg(*result) for result in zip(*results)]  # find average of all calculations
+        return self.tg_alpha, self.h
 
 
 def scan(video_path: str, camera_config: str, scaner_config: str):

@@ -190,6 +190,10 @@ class Camera:
         return (0, 0, *self.frame_size) if self._roi is None else self._roi
 
     @property
+    def extrinsic_mtx(self):
+        return np.c_[self.rot_mtx, self.tvec]
+
+    @property
     def cap(self) -> VideoCapture:
         """
         Video assosiated with camera
@@ -472,4 +476,16 @@ class CameraCalibrator:
         return ret, rot_mtx, t_vec
 
     def calibrate_camera_extrinsic_from_images(self, images):
-        pass
+        rot_mtx = np.zeros((3, 3))
+        t_vec = np.zeros(3)
+        count = 0
+        for image in images:
+            ret, R, T = self.extrinsic_from_image(image)
+            if ret:
+                count += 1
+                rot_mtx, t_vec = rot_mtx + R, t_vec + T
+        try:
+            rot_mtx, t_vec = rot_mtx / count, t_vec / count
+        except ZeroDivisionError:
+            print('Calibration failed. Zero proper images found.')
+        return rot_mtx, t_vec

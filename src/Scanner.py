@@ -6,6 +6,7 @@ from Camera import Camera
 from tools.general import normalize, avg
 
 
+
 # TODO: logging
 # TODO: World Frame binding via markers
 

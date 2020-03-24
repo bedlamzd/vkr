@@ -5,6 +5,7 @@ from cv2 import VideoCapture
 from typing import Tuple, List, Sequence
 import time
 
+
 def find_angle_of_view(view_range: int,
                        focal: float, *,
                        pxl_size: float = 1) -> float:
@@ -67,7 +68,6 @@ def xyz2uv(xyz, mtx, rot_mtx=None, t_vec=None, *, T=None):
     return uv[:2]
 
 
-
 # TODO: logging
 class Camera:
     """
@@ -79,8 +79,8 @@ class Camera:
     :type mtx: np.ndarray
     :ivar roi: region of interest in camera view (x, y, w, h)
     :type roi: Sequence
-    :ivar dist_coef: distortion coefficients of camera
-    :type dist_coef: np.ndarray
+    :ivar dist: distortion coefficients of camera
+    :type dist: np.ndarray
     :ivar rot_mtx: rotation matrix from camera coordinate system (CCS) to global
     :type rot_mtx: np.ndarray
     :ivar tvec: translation vector, camera coordinates in GCS
@@ -96,7 +96,7 @@ class Camera:
     def __init__(self,
                  mtx: Optional[np.ndarray] = None,
                  roi: Optional[Sequence] = None,
-                 dist_coef: Optional[np.ndarray] = None,
+                 dist: Optional[np.ndarray] = None,
                  rot_mtx: Optional[np.ndarray] = None,
                  tvec: Optional[np.ndarray] = None,
                  ksize: int = 3,
@@ -107,7 +107,7 @@ class Camera:
         self.mtx = mtx
         self.optimal_mtx = mtx
         self._roi = roi  # (x, y, w, h)
-        self.dist_coef = dist_coef
+        self.dist = dist
         self.rot_mtx = rot_mtx
         self.tvec = tvec
         self.ksize = ksize
@@ -115,9 +115,6 @@ class Camera:
         self.threshold = threshold
         self.colored = colored
         self._cap = cap  # type: Optional[VideoCapture]
-        self._frame_size = 0
-        self._frame_width = 0
-        self._frame_height = 0
 
     @classmethod
     def from_json(cls, filepath: str, cap: Optional[VideoCapture] = None) -> 'Camera':
@@ -315,7 +312,7 @@ class Camera:
         return img
 
     def undistort(self, img):
-        return cv2.undistort(img, self.mtx, self.dist_coef, None, self.optimal_mtx)
+        return cv2.undistort(img, self.mtx, self.dist, None, self.optimal_mtx)
 
     def process_img(self, img: np.ndarray, *,
                     undistort=False,

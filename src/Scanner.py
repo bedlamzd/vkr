@@ -3,7 +3,7 @@ import numpy as np
 from numpy import tan
 from typing import Tuple, Optional
 from Camera import Camera
-import utilities
+from tools.general import normalize, avg
 
 
 # TODO: logging
@@ -129,7 +129,7 @@ class Scanner:
 
     @property
     def depthmap(self) -> np.ndarray:
-        return utilities.normalize(self._cloud[..., -1]).copy()
+        return normalize(self._cloud[..., -1]).copy()
 
     @property
     def pointcloud(self) -> np.ndarray:

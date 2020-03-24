@@ -3,6 +3,9 @@ import numpy as np
 import cv2
 import time
 
+from tools.general import normalize
+from tools.math import roteul
+
 fx = 580
 fy = fx
 u0 = 640 // 2 - 1
@@ -13,7 +16,7 @@ roi = [30, 100,600, 300]
 mtx = np.array([[fx, 0, u0],
                 [0, fy, v0],
                 [0, 0, 1]])
-rot_mtx = utilities.roteul(pitch, yaw, roll, order='XYZ')
+rot_mtx = roteul(pitch, yaw, roll, order='XYZ')
 R = np.array([[0, 0, -1],
               [-1, 0, 0],
               [0, 1, 0]])
@@ -39,6 +42,6 @@ if __name__ == '__main__':
     pointcloud = scaner.pointcloud
     # pointcloud[..., 2] = pointcloud[..., 2] - np.abs(pointcloud[:,0,2].reshape(pointcloud.shape[0], 1))
     x, y, z = [x.reshape(x.shape[:2]) for x in np.dsplit(pointcloud,3)]
-    xn, yn, zn = [utilities.normalize(x) for x in [x,y,z]]
+    xn, yn, zn = [normalize(x) for x in [x,y,z]]
     np.clip(pointcloud[..., 2], 0, None, out=pointcloud[..., 2])
     # utilities.show_height_map(pointcloud)

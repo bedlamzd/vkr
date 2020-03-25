@@ -69,6 +69,8 @@ def xyz2uv(xyz, mtx, rot_mtx=None, t_vec=None, *, T=None):
 
 
 # TODO: logging
+# TODO: iterator for camera by frames
+# TODO: dump to json
 class Camera:
     """
     A class representing a camera
@@ -336,10 +338,12 @@ class Camera:
             img = self.process_img(img, **kwargs)
         return ret, img
 
-    def calibrate_intrinsic(self, delay=1, stream=False, **kwargs):
+    def calibrate_intrinsic(self, delay=1, stream=False, manual=False, **kwargs):
         calibrator = CameraCalibrator(**kwargs)
-        self.mtx, self.dist = calibrator.intrinsic_from_video(self.cap, delay, stream)
-        self.optimal_mtx, roi = calibrator.get_new_camera_mtx(self.frame_size)
+        self.mtx, self.dist = calibrator.intrinsic_from_video(self.cap, delay, stream, manual)
+
+    def get_new_camera_mtx(self, alpha=1):
+        self.optimal_mtx, roi = cv2.getOptimalNewCameraMatrix(self.mtx, self.dist, self.frame_size, alpha)
         self.next_frame_idx = 0
 
 
@@ -404,7 +408,7 @@ class CameraCalibrator:
         frame_read, frame = camera.read_raw()
         while frame_read and good_samples < self.samples:
             gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-            ret, corners = cv2.findChessboardCorners(gray, self.board_size, None)
+            ret, corners = cv2.findChessboardCorners(gray, self.board_size, None, flags=cv2.CALIB_CB_FAST_CHECK)
             current_timestamp = time.time() if stream else camera.frame_timing
             shot_condition = cv2.waitKey(15) == 13 if manual else abs(current_timestamp - last_timestamp) >= delay
             if ret and shot_condition:
@@ -469,7 +473,7 @@ class CameraCalibrator:
     def extrinsic_from_image(self, image):
         gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
         rot_mtx, t_vec = None, None
-        ret, corners = cv2.findChessboardCorners(gray, self.board_size)
+        ret, corners = cv2.findChessboardCorners(gray, self.board_size, flags=cv2.CALIB_CB_FAST_CHECK)
         if ret:
             corners = cv2.cornerSubPix(gray, corners, self.win_size, self.zero_zone, self.criteria)
             cv2.drawChessboardCorners(image, self.board_size, corners, ret)

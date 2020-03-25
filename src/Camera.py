@@ -388,7 +388,7 @@ class CameraCalibrator:
         if self.rvec and self.tvec:
             return np.column_stack([self.rvec, self.tvec])
 
-    def intrinsic_from_video(self, video: cv2.VideoCapture, delay=1, stream=False):
+    def intrinsic_from_video(self, video: cv2.VideoCapture, delay=1, stream=False, manual=False):
         cv2.namedWindow('Calibration')
         camera = Camera(cap=video)
         good_samples = 0
@@ -406,7 +406,8 @@ class CameraCalibrator:
             gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
             ret, corners = cv2.findChessboardCorners(gray, self.board_size, None)
             current_timestamp = time.time() if stream else camera.frame_timing
-            if ret and abs(current_timestamp - last_timestamp) >= delay:
+            shot_condition = cv2.waitKey(15) == 13 if manual else abs(current_timestamp - last_timestamp) >= delay
+            if ret and shot_condition:
                 obj_points.append(self.board_coordinates)
                 corners = cv2.cornerSubPix(gray, corners, self.win_size, self.zero_zone, self.criteria)
                 img_points.append(corners)

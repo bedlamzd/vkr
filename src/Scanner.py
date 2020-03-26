@@ -83,7 +83,7 @@ class Scanner:
     def from_config(cls, camera: Camera, filepath: str) -> 'Scanner':
         # TODO: write ini parsing
         h, angle, extraction_mode, velocity = (filepath)
-        return Scanner(camera, h, angle, velocity)
+        return cls(camera, h, angle, velocity)
 
     @staticmethod
     def refine_laser_center(prev=(0, 0), middle=(0, 0), nxt=(0, 0)) -> Tuple[float, float]:

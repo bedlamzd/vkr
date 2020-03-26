@@ -154,7 +154,7 @@ class Camera:
     def from_config(cls, filepath: str, cap: Optional[VideoCapture] = None) -> 'Camera':
         # TODO: write json parsing
         mtx, roi, dist_coef, rot_mtx, tvec, ksize, sigma, threshold, colored = (filepath)
-        return Camera(mtx, roi, dist_coef, rot_mtx, tvec, ksize, sigma, threshold, colored, cap)
+        return cls(mtx, roi, dist_coef, rot_mtx, tvec, ksize, sigma, threshold, colored, cap)
 
     @staticmethod
     def check_parameters(mtx: Optional[np.ndarray] = None,

@@ -188,8 +188,11 @@ class Camera:
         return self.fx, self.fy
 
     @property
-    def roi(self) -> Tuple:
-        return self._roi if self._roi else (0, 0, *self.frame_size)
+    def roi(self) -> Optional[Tuple]:
+        try:
+            return self._roi if self._roi else (0, 0, *self.frame_size)
+        except AssertionError:
+            return None
 
     @property
     def extrinsic_mtx(self):

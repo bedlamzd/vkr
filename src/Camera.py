@@ -4,6 +4,7 @@ import cv2
 from cv2 import VideoCapture
 from typing import Tuple, List, Sequence
 import time
+import json
 
 
 def find_angle_of_view(view_range: int,
@@ -95,6 +96,18 @@ class Camera:
     :type threshold: float
     """
 
+    _config_attr = [
+        'mtx',
+        'dist',
+        'roi',
+        'rot_mtx',
+        'tvec',
+        'ksize',
+        'sigma',
+        'threshold',
+        'colored'
+    ]
+
     def __init__(self,
                  mtx: Optional[np.ndarray] = None,
                  roi: Optional[Sequence] = None,
@@ -118,11 +131,24 @@ class Camera:
         self.colored = colored
         self._cap = cap  # type: Optional[VideoCapture]
 
+    @property
+    def config_data(self):
+        return {attribute: getattr(self, attribute).tolist() if hasattr(getattr(self, attribute), 'tolist')
+        else getattr(self, attribute) for attribute in self._config_attr}
+
     @classmethod
-    def from_json(cls, filepath: str, cap: Optional[VideoCapture] = None) -> 'Camera':
-        # TODO: write json parsing
-        mtx, roi, dist_coef, rot_mtx, tvec, ksize, sigma, threshold, colored = (filepath)
-        return Camera(mtx, roi, dist_coef, rot_mtx, tvec, ksize, sigma, threshold, colored, cap)
+    def from_json(cls, filepath: str = 'src/camera.json', cap: Optional[VideoCapture] = None) -> 'Camera':
+        data = json.load(open(filepath))
+        data = {attr: np.array(value) if isinstance(value, Sequence) else value
+                for attr, value in data.items() if attr in cls._config_attr}
+        return cls(cap=cap, **data)
+
+    def dump_json(self, filepath='src/camera.json', **kwargs):
+        json.dump(self.config_data, open(filepath, 'w'), **kwargs)
+        print(f'Camera data saved to {filepath}')
+
+    def dumps_json(self, **kwargs):
+        return json.dumps(self.config_data, **kwargs)
 
     @classmethod
     def from_config(cls, filepath: str, cap: Optional[VideoCapture] = None) -> 'Camera':
@@ -142,6 +168,7 @@ class Camera:
                          colored: bool = False,
                          cap: Optional[VideoCapture] = None):
         # TODO: write parameters validation
+        # TODO: Sequence -> numpy.ndarray conversion
         assert mtx is None or (isinstance(mtx, np.ndarray) and mtx.shape == (3, 3))
         assert dist_coef is None or isinstance(dist_coef, np.ndarray)
         assert rot_mtx is None or (isinstance(rot_mtx, np.ndarray) and rot_mtx.shape == (3, 3))

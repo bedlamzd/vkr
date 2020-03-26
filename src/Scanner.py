@@ -1,7 +1,8 @@
 import cv2
+import json
 import numpy as np
 from numpy import tan
-from typing import Tuple, Optional
+from typing import Tuple, Optional, Sequence
 from Camera import Camera
 from tools.general import normalize, avg
 
@@ -13,6 +14,15 @@ from itertools import combinations
 
 
 class Scanner:
+    _config_attr = [
+        'height',
+        'angle',
+        'velocity',
+        'img_proc_opts',
+        'extraction_mode',
+        'extraction_opts'
+    ]
+
     def __init__(self, camera: Optional[Camera] = None,
                  height: Optional[float] = None,
                  angle: Optional[float] = None,
@@ -42,6 +52,7 @@ class Scanner:
     @staticmethod
     def check_parameters(camera=None, height=None, angle=None, velocity=None, img_proc_opts=None, extraction_opts=None):
         # TODO: write parameters validation
+        # TODO: Sequence -> numpy.ndarray conversion
         # TODO: extraction mode names formatting and aliasing (e.g. 'Laplace of Gauss'|'log' -> 'laplace_of_gauss')
         if img_proc_opts is None:
             img_proc_opts = {'mask': True, 'color_filt': True, 'roi': True}
@@ -49,11 +60,24 @@ class Scanner:
             img_proc_opts = img_proc_opts
         return camera, height, angle, velocity, img_proc_opts, extraction_opts
 
+    @property
+    def config_data(self):
+        return {attribute: getattr(self, attribute).tolist() if hasattr(getattr(self, attribute), 'tolist')
+        else getattr(self, attribute) for attribute in self._config_attr}
+
     @classmethod
     def from_json(cls, camera: Camera, filepath: str) -> 'Scanner':
-        # TODO: write json parsing
-        h, angle, extraction_mode, velocity = (filepath)
-        return Scanner(camera, h, angle, velocity)
+        data = json.load(open(filepath))
+        data = {attr: np.array(value) if isinstance(value, Sequence) else value
+                for attr, value in data.items() if attr in cls._config_attr}
+        return cls(camera=camera, **data)
+
+    def dump_json(self, filepath='src/scanner.json', **kwargs):
+        json.dump(self.config_data, open(filepath, 'w'), **kwargs)
+        print(f'Scanner data saved to {filepath}')
+
+    def dumps_json(self, **kwargs):
+        return json.dumps(self.config_data, **kwargs)
 
     @classmethod
     def from_config(cls, camera: Camera, filepath: str) -> 'Scanner':

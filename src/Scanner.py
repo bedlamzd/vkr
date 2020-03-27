@@ -178,16 +178,13 @@ class Scanner:
         return global_coords
 
     def scan(self):
-        camera = self.camera
-        ret, img = camera.read_processed(**self.img_proc_opts)
-        while ret:
+        for img in self.camera:
             laser = getattr(self, self.extraction_mode)(img)
             local_coords = self.find_local_coords(laser)
             global_coords = self.local2global_coords(local_coords)
             self._cloud[camera.current_frame_idx] = global_coords
             camera.tvec[0] += self.velocity / camera.fps  # using FPS
             # camera.tvec[0] += camera.frame_timing * self.velocity - camera.tvec[0] # using timing
-            ret, img = camera.read_processed()
 
 
 class ScannerCalibrator:

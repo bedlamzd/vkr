@@ -118,7 +118,8 @@ class Camera:
                  sigma: float = 0,
                  threshold: float = 0,
                  colored: bool = False,
-                 cap: Optional[VideoCapture] = None):
+                 cap: Optional[VideoCapture] = None,
+                 process_on_iteration=False):
         self.mtx = mtx
         self.optimal_mtx = mtx
         self._roi = roi  # (x, y, w, h)
@@ -129,7 +130,8 @@ class Camera:
         self.sigma = sigma
         self.threshold = threshold
         self.colored = colored
-        self._cap = cap  # type: Optional[VideoCapture]
+        self.cap = cap
+        self.process_on_iteration = process_on_iteration
 
     @property
     def config_data(self):
@@ -225,18 +227,14 @@ class Camera:
     def extrinsic_mtx(self):
         return np.c_[self.rot_mtx, self.tvec]
 
-    @property
-    def cap(self) -> VideoCapture:
-        """
-        Video assosiated with camera
-        """
-        assert isinstance(self._cap, VideoCapture), 'cap is not assigned'
-        return self._cap  # type: VideoCapture
+    def __iter__(self):
+        return self
 
-    @cap.setter
-    def cap(self, cap: VideoCapture):
-        assert isinstance(cap, VideoCapture)
-        self._cap = cap
+    def __next__(self):
+        ret, img = self.read_processed() if self.process_on_iteration else self.read_raw()
+        if not ret or self.next_frame_idx == self.frame_count:
+            raise StopIteration
+        return img
 
     @property
     def frame_timing(self) -> float:

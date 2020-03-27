@@ -239,3 +239,22 @@ def fast_pose(device, board_size=(6, 4), autofocus=False, *args, **kwargs):
         cv2.imshow("Video", img)
     cam.cap.release()
     cv2.destroyAllWindows()
+
+
+def take_shot(device, dir='.', name_template='shot%d'):
+    from Camera import Camera
+
+    i = 0
+    cam = Camera(cap=cv2.VideoCapture(device))
+    for img in cam:
+        key = cv2.waitKey(15)
+        cv2.imshow("Video", img)
+        if key == 27:
+            break
+        elif key == 13:
+            name = f'{dir}/{name_template % i}.png'
+            while not cv2.imwrite(name, img): pass
+            i += 1
+            print(f'Shot taken. {name}')
+    cv2.destroyAllWindows()
+    cam.cap.release()

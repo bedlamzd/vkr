@@ -209,3 +209,33 @@ def decor_stream2img(img_func):
                 cap.release()
 
     return wrapper
+
+
+def fast_calibration(device, board_size=(6, 4), manual=True, autofocus=False, *args, **kwargs):
+    from Camera import Camera
+
+    cam = Camera(cap=cv2.VideoCapture(device))
+    if not autofocus:
+        cam.cap.set(cv2.CAP_PROP_AUTOFOCUS, 0)
+        cv2.namedWindow("Video")
+        cv2.createTrackbar("Focus", "Video", 0, 500, lambda v: cam.cap.set(cv2.CAP_PROP_FOCUS, v / 10))
+    cam.calibrate_intrinsic(board_size=board_size, manual=manual, *args, **kwargs)
+    cam.cap.release()
+
+
+def fast_pose(device, board_size=(6, 4), autofocus=False, *args, **kwargs):
+    from Camera import Camera, CameraCalibrator
+
+    cam = Camera(cap=cv2.VideoCapture(device))
+    calibrator = CameraCalibrator(board_size=board_size, *args, **kwargs)
+    if not autofocus:
+        cam.cap.set(cv2.CAP_PROP_AUTOFOCUS, 0)
+        cv2.namedWindow("Video")
+        cv2.createTrackbar("Focus", "Video", 0, 500, lambda v: cam.cap.set(cv2.CAP_PROP_FOCUS, v / 10))
+    for img in cam:
+        if cv2.waitKey(15) == 27: break
+        ret, rot_mtx, tvec = calibrator.extrinsic_from_image(img)
+        if ret: print(f'R = {rot_mtx}\nX = {tvec[0]}\nY = {tvec[1]}\nZ = {tvec[2]}\n')
+        cv2.imshow("Video", img)
+    cam.cap.release()
+    cv2.destroyAllWindows()

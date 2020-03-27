@@ -232,8 +232,7 @@ class Camera:
 
     def __next__(self):
         ret, img = self.read_processed() if self.process_on_iteration else self.read_raw()
-        if not ret or self.next_frame_idx == self.frame_count:
-            raise StopIteration
+        if not ret: raise StopIteration
         return img
 
     @property
@@ -433,8 +432,8 @@ class CameraCalibrator:
             # where points are corners coordinates in pixels for each image
         ]
         last_timestamp = -np.inf
-        frame_read, frame = camera.read_raw()
-        while frame_read and good_samples < self.samples:
+        for frame in camera:
+            if good_samples >= self.samples: break
             gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
             ret, corners = cv2.findChessboardCorners(gray, self.board_size, None, flags=cv2.CALIB_CB_FAST_CHECK)
             current_timestamp = time.time() if stream else camera.frame_timing
@@ -447,22 +446,18 @@ class CameraCalibrator:
                 good_samples += 1
                 last_timestamp = current_timestamp
                 print(f'Sample taken. Current samples: {good_samples}')
-            if cv2.waitKey(15) == 27:
-                break
+            if cv2.waitKey(15) == 27: break
             cv2.drawChessboardCorners(frame, self.board_size, corners, ret)
             cv2.imshow('Calibration', frame)
-            frame_read, frame = camera.read_raw()
-        else:
-            if good_samples == 0:
-                print('No good samples. Provide better data.')
-                print('Calibration failed.')
-            else:
-                if good_samples < self.samples: print(
-                    'Fewer good samples taken than requested, calibration might be inaccurate.')
-                ret, self.mtx, self.dist, *_ = cv2.calibrateCamera(obj_points, img_points, camera.frame_size, None,
-                                                                   None)
-                print('Calibration done.')
         cv2.destroyAllWindows()
+        if not good_samples:
+            print('No good samples. Provide better data.')
+            print('Calibration failed.')
+            return None, None
+        else:
+            print('Fewer good samples taken than requested, calibration might be inaccurate.')
+        ret, self.mtx, self.dist, *_ = cv2.calibrateCamera(obj_points, img_points, camera.frame_size, None, None)
+        print('Calibration done.')
         return self.mtx, self.dist
 
     def intrinsic_from_images(self, images: List[np.ndarray]):

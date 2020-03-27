@@ -244,7 +244,7 @@ class Camera:
         return self.cap.get(cv2.CAP_PROP_POS_MSEC) / 1000
 
     @property
-    def current_frame_idx(self):
+    def prev_frame_idx(self):
         """
         Index of current frame in video (-1 if not started)
         """

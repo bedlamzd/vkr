@@ -174,6 +174,7 @@ def decor_stream2img(img_func):
     :return: генератор
     """
     import cv2
+
     @wraps(img_func)
     def wrapper(video, loops=False, *args, **kwargs):
         """

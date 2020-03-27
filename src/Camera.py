@@ -495,13 +495,14 @@ class CameraCalibrator:
 
     def extrinsic_from_image(self, image):
         gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
-        rot_mtx, t_vec = None, None
+        rot_mtx, tvec = None, None
         ret, corners = cv2.findChessboardCorners(gray, self.board_size, flags=cv2.CALIB_CB_FAST_CHECK)
         if ret:
             corners = cv2.cornerSubPix(gray, corners, self.win_size, self.zero_zone, self.criteria)
             cv2.drawChessboardCorners(image, self.board_size, corners, ret)
-            ret, rot_mtx, t_vec = cv2.solvePnP(self.board_coordinates, corners, self.mtx, self.dist)
-        return ret, rot_mtx, t_vec
+            ret, rvec, tvec = cv2.solvePnP(self.board_coordinates, corners, self.mtx, self.dist)
+            rot_mtx = cv2.Rodrigues(rvec)[0]
+        return ret, rot_mtx, tvec
 
     def calibrate_camera_extrinsic_from_images(self, images):
         rot_mtx = np.zeros((3, 3))

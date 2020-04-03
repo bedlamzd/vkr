@@ -15,7 +15,7 @@
 \geometry{top=20mm}
 \geometry{bottom=20mm}
 
-
+\usepackage{pythontex}
 
 \begin{document}
     \section{Сканер}
@@ -74,7 +74,7 @@
         \label{eq:calibration}
         \left\{
         \begin{aligned}
-            \tg\alpha &= \frac{h_i\tg\beta_i(\tg\beta_k-\tg\beta_0) - h_k\tg\beta_k(\tg\beta_i-\tg\beta_0)}{h_i(\tg\beta_k-\tg\beta_0) - h_k(\tg\beta_i-\tg\beta_0)}\\
+            \tg\alpha &= \frac{h_k\tg\beta_k(\tg\beta_i-\tg\beta_0) - h_i\tg\beta_i(\tg\beta_k-\tg\beta_0)}{h_i(\tg\beta_k-\tg\beta_0) - h_k(\tg\beta_i-\tg\beta_0)}\\
             H &= h_i\frac{(\tg\alpha + \tg\beta_i)(\tg\alpha + \tg\beta_0)}{(\tg\beta_i - \tg\beta_0)(r_{32}\tg^2\alpha-r_{33}\tg\alpha)}
         \end{aligned}
         \right.
@@ -217,8 +217,8 @@
     \]
     \[
         \begin{split}
-            h_i = &H\frac{\tg\alpha\tg\gamma_i}{\tg\alpha+\tg\beta_i}r_{31} + H\frac{\tg\alpha\tg\beta_i}{\tg\alpha+\tg\beta_i}r_{32} + H\frac{\tg\alpha}{\tg\alpha+\tg\beta_i}r_{33}-\\
-            - &H\frac{\tg\alpha\tg\gamma_0}{\tg\alpha+\tg\beta_0}r_{31} + H\frac{\tg\alpha\tg\beta_0}{\tg\alpha+\tg\beta_0}r_{32} + H\frac{\tg\alpha}{\tg\alpha+\tg\beta_0}r_{33}
+            h_i = &\left(H\frac{\tg\alpha\tg\gamma_i}{\tg\alpha+\tg\beta_i}r_{31} + H\frac{\tg\alpha\tg\beta_i}{\tg\alpha+\tg\beta_i}r_{32} + H\frac{\tg\alpha}{\tg\alpha+\tg\beta_i}r_{33}\right)-\\
+            - &\left(H\frac{\tg\alpha\tg\gamma_0}{\tg\alpha+\tg\beta_0}r_{31} + H\frac{\tg\alpha\tg\beta_0}{\tg\alpha+\tg\beta_0}r_{32} + H\frac{\tg\alpha}{\tg\alpha+\tg\beta_0}r_{33}\right)
         \end{split}
     \]
     \[
@@ -231,7 +231,7 @@
     \[
         \begin{aligned}
             h_i = &r_{31} H \tg\alpha \left(\frac{\tg\gamma_i}{\tg\alpha+\tg\beta_i} - \frac{\tg\gamma_0}{\tg\alpha+\tg\beta_0}\right)+\\
-            + &r_{32} H \tg\alpha \frac{\tg\beta_i(\tg\alpha+\tg\beta_0)-\beta_0(\tg\alpha+\tg\beta_i)}{(\tg\alpha+\tg\beta_i)(\tg\alpha+\tg\beta_0)}+\\
+            + &r_{32} H \tg\alpha \frac{\tg\beta_i(\tg\alpha+\tg\beta_0)-\tg\beta_0(\tg\alpha+\tg\beta_i)}{(\tg\alpha+\tg\beta_i)(\tg\alpha+\tg\beta_0)}+\\
             + &r_{33} H \tg\alpha \frac{\tg\beta_0 - \tg\beta_i}{(\tg\alpha+\tg\beta_i)(\tg\alpha+\tg\beta_0)}
         \end{aligned}
     \]
@@ -252,24 +252,24 @@
     \end{equation*}
     \begin{gather*}
         \frac{h_i}{h_k} = \frac{(\tg\beta_i - \tg\beta_0)(\tg\alpha + \tg\beta_k)}{(\tg\beta_k - \tg\beta_0)(\tg\alpha + \tg\beta_i)}\\
-        \frac{h_i}{h_k} = \frac{\tg\alpha(\tg\beta_i-\tg\beta_0) - \tg\beta_k(\tg\beta_i-\tg\beta_0)}{\tg\alpha(\tg\beta_k-\tg\beta_0) - \tg\beta_i(\tg\beta_k-\tg\beta_0)}\\
-        h_i(\tg\alpha(\tg\beta_k-\tg\beta_0) - \tg\beta_i(\tg\beta_k-\tg\beta_0)) =
-        h_k(\tg\alpha(\tg\beta_i-\tg\beta_0) - \tg\beta_k(\tg\beta_i-\tg\beta_0))\\
+        \frac{h_i}{h_k} = \frac{\tg\alpha(\tg\beta_i-\tg\beta_0) + \tg\beta_k(\tg\beta_i-\tg\beta_0)}{\tg\alpha(\tg\beta_k-\tg\beta_0) + \tg\beta_i(\tg\beta_k-\tg\beta_0)}\\
+        h_i(\tg\alpha(\tg\beta_k-\tg\beta_0) + \tg\beta_i(\tg\beta_k-\tg\beta_0)) =
+        h_k(\tg\alpha(\tg\beta_i-\tg\beta_0) + \tg\beta_k(\tg\beta_i-\tg\beta_0))\\
         h_i\tg\alpha(\tg\beta_k-\tg\beta_0) - h_k\tg\alpha(\tg\beta_i-\tg\beta_0) =
-        h_i\tg\beta_i(\tg\beta_k-\tg\beta_0) - h_k\tg\beta_k(\tg\beta_i-\tg\beta_0)\\
+        h_k\tg\beta_k(\tg\beta_i-\tg\beta_0) - h_i\tg\beta_i(\tg\beta_k-\tg\beta_0)\\
         \tg\alpha(h_i(\tg\beta_k-\tg\beta_0) - h_k(\tg\beta_i-\tg\beta_0)) =
-        h_i\tg\beta_i(\tg\beta_k-\tg\beta_0) - h_k\tg\beta_k(\tg\beta_i-\tg\beta_0)\\
+        h_k\tg\beta_k(\tg\beta_i-\tg\beta_0) - h_i\tg\beta_i(\tg\beta_k-\tg\beta_0)\\
     \end{gather*}
     \[
         \tg\alpha =
-        \frac{h_i\tg\beta_i(\tg\beta_k-\tg\beta_0) - h_k\tg\beta_k(\tg\beta_i-\tg\beta_0)}{h_i(\tg\beta_k-\tg\beta_0) - h_k(\tg\beta_i-\tg\beta_0)} \eqno (*)
+        \frac{h_k\tg\beta_k(\tg\beta_i-\tg\beta_0) - h_i\tg\beta_i(\tg\beta_k-\tg\beta_0)}{h_i(\tg\beta_k-\tg\beta_0) - h_k(\tg\beta_i-\tg\beta_0)} \eqno (*)
     \]
     Уравнение (*) позволяет найти $\tg\alpha$ при известных значениях высот объектов $h_i,\,h_k$, углах отклонения лазера $\beta_i,\,\beta_k$, соответствующих этим высотам, и угла отклонения луча от начальной плоскости. Подставив таким образом получившееся значение в систему уравнений, можно найти рабочую высоту $H$ сканера.
     \begin{equation*}
         \boxed{
             \left\{
             \begin{aligned}
-                \tg\alpha &= \frac{h_i\tg\beta_i(\tg\beta_k-\tg\beta_0) - h_k\tg\beta_k(\tg\beta_i-\tg\beta_0)}{h_i(\tg\beta_k-\tg\beta_0) - h_k(\tg\beta_i-\tg\beta_0)}\\
+                \tg\alpha &= \frac{h_k\tg\beta_k(\tg\beta_i-\tg\beta_0) - h_i\tg\beta_i(\tg\beta_k-\tg\beta_0)}{h_i(\tg\beta_k-\tg\beta_0) - h_k(\tg\beta_i-\tg\beta_0)}\\
                 H &= h_i\frac{(\tg\alpha + \tg\beta_i)(\tg\alpha + \tg\beta_0)}{(\tg\beta_i - \tg\beta_0)(r_{32}\tg^2\alpha-r_{33}\tg\alpha)}
             \end{aligned}
             \right.

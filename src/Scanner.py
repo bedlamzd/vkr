@@ -212,12 +212,13 @@ class ScannerCalibrator:
                                h2, tg_beta2,
                                tg_beta0=0, r32=0, r33=1, *,
                                rot_mtx=None):
-        if rot_mtx:
-            r32, r33 = rot_mtx[3, 2], rot_mtx[3, 2]
-        tg_alpha = ((h1 * tg_beta1 * (tg_beta2 - tg_beta0) - h2 * tg_beta2 * (tg_beta1 - tg_beta0))
-                    / (h1 * (tg_beta2 - tg_beta0) - h2 * (tg_beta1 - tg_beta0)))
-        H = h1 * (((tg_alpha + tg_beta1) * (tg_alpha + tg_beta0))
-                  / ((tg_beta1 - tg_beta0) * (r32 * tg_alpha ** 2 - r33 * tg_alpha)))
+        if rot_mtx is not None:
+            r32, r33 = rot_mtx[2, 1], rot_mtx[2, 2]
+        tg_alpha = ((h_k * tg_beta_k * (tg_beta_i - tg_beta0) - h_i * tg_beta_i * (tg_beta_k - tg_beta0))
+                    / (h_i * (tg_beta_k - tg_beta0) - h_k * (tg_beta_i - tg_beta0)))
+        H = h_i * (((tg_alpha + tg_beta_i) * (tg_alpha + tg_beta0))
+                   / ((tg_beta_i - tg_beta0) * (r32 * tg_alpha ** 2 - r33 * tg_alpha)))
+        print(f'h1 = {h_i:6.2f}, h2 = {h_k:6.2f} => tan(alpha) = {tg_alpha:6.2f}, H = {H:6.2f}')
         return tg_alpha, H
 
     def calibrate_from_images(self, images, heights):

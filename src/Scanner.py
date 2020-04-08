@@ -197,13 +197,14 @@ class ScannerCalibrator:
     def alpha(self):
         return np.arctan(self.tg_alpha)
 
-    def calculate_from_angles(self,
+    @classmethod
+    def calculate_from_angles(cls,
                               h1, beta1,
                               h2, beta2,
                               beta0=0, r32=0, r33=1, *,
                               rot_mtx=None):
         tg_beta0, tg_beta1, tg_beta2 = np.tan([beta0, beta1, beta2])
-        tg_alpha, H = self.calculate_from_tangent(h1, tg_beta1, h2, tg_beta2, tg_beta0, r32, r33, rot_mtx=rot_mtx)
+        tg_alpha, H = cls.calculate_from_tangent(h1, tg_beta1, h2, tg_beta2, tg_beta0, r32, r33, rot_mtx=rot_mtx)
         return tg_alpha, H
 
     def calculate_from_tangent(self,

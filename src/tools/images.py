@@ -174,7 +174,8 @@ def decor_stream2img(img_func):
     :return: генератор
     """
     import cv2
-
+    # TODO: consider to delete or replace with custom iterator object for cap (which is actually Camera class)
+    #       maybe extend functionality for specific use
     @wraps(img_func)
     def wrapper(video, loops=False, *args, **kwargs):
         """

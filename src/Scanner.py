@@ -53,6 +53,7 @@ class Scanner:
     def check_parameters(camera=None, height=None, angle=None, velocity=None, img_proc_opts=None, extraction_opts=None):
         # TODO: write parameters validation
         # TODO: Sequence -> numpy.ndarray conversion
+        # TODO: default values assignment
         # TODO: extraction mode names formatting and aliasing (e.g. 'Laplace of Gauss'|'log' -> 'laplace_of_gauss')
         if img_proc_opts is None:
             img_proc_opts = {'mask': True, 'color_filt': True, 'roi': True}
@@ -132,6 +133,7 @@ class Scanner:
         return cls.fine_laser(img)
 
     def laplace_of_gauss(self, img: np.ndarray) -> np.ndarray:
+        # TODO: make it class method somehow
         ksize, sigma = self.extraction_opts.get('ksize', 3), self.extraction_opts.get('sigma', 0)
         kernel_x = cv2.getGaussianKernel(ksize=ksize, sigma=sigma)
         kernel_y = kernel_x.T
@@ -287,6 +289,8 @@ class ScannerCalibrator:
 
 
 def scan(video_path: str, camera_config: str, scaner_config: str):
+    # TODO: create main file where objects construction happens and all work.
+    #       Including final object detection, gcode generation, dxf processing and so on
     cap = cv2.VideoCapture(video_path)
     camera = Camera.from_json(camera_config, cap)
     scanner = Scanner.from_json(camera, scaner_config)

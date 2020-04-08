@@ -207,9 +207,44 @@ class ScannerCalibrator:
         tg_alpha, H = cls.calculate_from_tangent(h1, tg_beta1, h2, tg_beta2, tg_beta0, r32, r33, rot_mtx=rot_mtx)
         return tg_alpha, H
 
-    def calculate_from_tangent(self,
-                               h1, tg_beta1,
-                               h2, tg_beta2,
+    @staticmethod
+    def calculate_from_tangent2(z_1, tg_beta_1, tg_gamma_1,
+                                z_2, tg_beta_2, tg_gamma_2,
+                                z_c=0, r31=0, r32=0, r33=1, *, R=None, tvec=None):
+        """
+        Given z coordinates of two objects calculate tg(alpha) and H for scanner
+
+        default r components mean camera Z aligned with world frame Z
+
+        :param float z_1: z coordinate of first point in world frame
+        :param float tg_beta_1: vertical laser angle for first point
+        :param float tg_gamma_1: horizontal laser angle for first point
+        :param float z_2: z coordinate of second point in world frame
+        :param float tg_beta_2: vertical laser angle for second point
+        :param float tg_gamma_2: horizontal laser angle for second point
+        :param float z_c: camera z coordinate relative to world origin
+        :param float r31: component of rotation matrix of camera (default 0)
+        :param float r32: component of rotation matrix of camera (default 0)
+        :param float r33: component of rotation matrix of camera (default 1)
+        :param Sequence R: rotation matrix of camera
+        :param Sequence tvec: camera coordinates relative to world origin
+        :return:
+        """
+
+        if np.any(R):
+            r31, r32, r33 = R[2]
+        if np.any(tvec):
+            z_c = tvec[2]
+        z_1 = (z_1 - z_c) / (r31 * tg_gamma_1 + r32 * tg_beta_1 + r33)
+        z_2 = (z_2 - z_c) / (r31 * tg_gamma_2 + r32 * tg_beta_2 + r33)
+        tg_alpha = (z_2 * tg_beta_2 - z_1 * tg_beta_1) / (z_1 - z_2)
+        H = z_1 * (1 + tg_beta_1 / tg_alpha)
+        print(f'z1 = {z_1:6.2f}, z2 = {z_2:6.2f} => tan(alpha) = {tg_alpha:6.2f}, H = {H:6.2f}')
+        return tg_alpha, H
+
+    @staticmethod
+    def calculate_from_tangent(h_i, tg_beta_i,
+                               h_k, tg_beta_k,
                                tg_beta0=0, r32=0, r33=1, *,
                                rot_mtx=None):
         if rot_mtx is not None:
@@ -232,6 +267,20 @@ class ScannerCalibrator:
                                                        hk, tg_betak,
                                                        tg_beta0, rot_mtx=self.scanner.camera.rot_mtx))
         self.tg_alpha, self.h = [avg(*result) for result in zip(*results)]  # find average of all calculations
+        return self.tg_alpha, self.h
+
+    def calibrate_from_images2(self, images, z_coordinates):
+        u0, v0 = int(self.scanner.camera.u0), self.scanner.camera.v0  # optical center of an image
+        results = []  # (tg_alpha, H) pairs for each calculation
+        # tangent of the angle between laser ray and optical axis of the camera in each image
+        tg_beta = [(self.scanner.laplace_of_gauss(image)[u0] - v0) / self.scanner.camera.fy for image in images]
+        for (tg_betai, zi), (tg_betak, zk) in combinations(zip(tg_beta[1:], z_coordinates[1:]), 2):
+            results.append(self.calculate_from_tangent2(zi, tg_betai, 0,
+                                                        zk, tg_betak, 0,
+                                                        tvec=self.scanner.camera.tvec,
+                                                        R=self.scanner.camera.rot_mtx))
+        self.tg_alpha, self.h = [avg(*result) for result in zip(*results)]  # find average of all calculations
+        print(f'tan(alpha) = {self.tg_alpha:6.2f}, H = {self.h:6.2f}')
         return self.tg_alpha, self.h
 
 

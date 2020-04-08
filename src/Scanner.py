@@ -24,9 +24,9 @@ class Scanner:
     ]
 
     def __init__(self, camera: Optional[Camera] = None,
-                 height: Optional[float] = None,
-                 angle: Optional[float] = None,
-                 velocity: Optional[float] = None,
+                 height: Optional[float] = 0,
+                 angle: Optional[float] = 0,
+                 velocity: Optional[np.ndarray] = None,
                  img_proc_opts: Optional[dict] = None,
                  extraction_mode: str = 'max_peak',
                  extraction_opts: Optional[dict] = None):
@@ -183,7 +183,7 @@ class Scanner:
             local_coords = self.find_local_coords(laser)
             global_coords = self.local2global_coords(local_coords)
             self._cloud[self.camera.prev_frame_idx] = global_coords
-            self.camera.tvec[0] += self.velocity / self.camera.fps  # using FPS
+            self.camera.tvec += self.velocity / self.camera.fps  # using FPS
             # camera.tvec[0] += camera.frame_timing * self.velocity - camera.tvec[0] # using timing
 
 

@@ -222,6 +222,8 @@ def fast_calibration(device, board_size=(6, 4), manual=True, autofocus=False, *a
         cv2.createTrackbar("Focus", "Video", 0, 500, lambda v: cam.cap.set(cv2.CAP_PROP_FOCUS, v / 10))
     cam.calibrate_intrinsic(board_size=board_size, manual=manual, *args, **kwargs)
     cam.cap.release()
+    print(cam.mtx, cam.dist)
+    return cam
 
 
 def fast_pose(device, board_size=(6, 4), autofocus=False, *args, **kwargs):

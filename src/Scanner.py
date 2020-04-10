@@ -258,7 +258,8 @@ class ScannerCalibrator:
         z_2 = (z_2 - z_c) / (r31 * tg_gamma_2 + r32 * tg_beta_2 + r33)
         tg_alpha = (z_2 * tg_beta_2 - z_1 * tg_beta_1) / (z_1 - z_2)
         H = z_1 * (1 + tg_beta_1 / tg_alpha)
-        print(f'z1 = {z_1:6.2f}, z2 = {z_2:6.2f} => tan(alpha) = {tg_alpha:6.2f}, H = {H:6.2f}')
+        print(
+            f'z1 = {z_1:6.2f}, z2 = {z_2:6.2f} => tan(alpha) = {tg_alpha:8.4f} ({np.degrees(np.arctan(tg_alpha)):4.2f}deg), H = {H:6.2f}')
         return tg_alpha, H
 
     @staticmethod
@@ -299,7 +300,7 @@ class ScannerCalibrator:
                                                         tvec=self.scanner.camera.tvec,
                                                         R=self.scanner.camera.rot_mtx))
         self.tg_alpha, self.h = [avg(*result) for result in zip(*results)]  # find average of all calculations
-        print(f'tan(alpha) = {self.tg_alpha:6.2f}, H = {self.h:6.2f}')
+        print(f'tan(alpha) = {self.tg_alpha:8.4f} ({np.degrees(np.arctan(self.tg_alpha)):4.2f}deg), H = {self.h:6.2f}')
         return self.tg_alpha, self.h
 
 

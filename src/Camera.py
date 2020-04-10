@@ -401,10 +401,11 @@ class CameraCalibrator:
         self.samples = samples
 
         self.board_size = board_size
+        self.square_size = square_size
         if not board_coordinates:
             # if no coordinates provided assume square size as unit length and zero z-coordinate
             board_coordinates = np.zeros((np.prod(board_size), 3), np.float32)
-            board_coordinates[:, :2] = np.mgrid[:board_size[0], :board_size[1]].T.reshape(-1, 2) * square_size
+            board_coordinates[:, :2] = np.mgrid[:board_size[0], :board_size[1]].T.reshape(-1, 2) * self.square_size
         self.board_coordinates = board_coordinates
 
         self.mtx = mtx

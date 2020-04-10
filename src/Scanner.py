@@ -39,7 +39,8 @@ class Scanner:
         # config values
         self.h = height  # config
         self.tg_angle = tan(angle)  # config
-        self.extraction_mode = extraction_mode  # config
+        self.extraction_mode = ''.join(
+            char for char in extraction_mode.lower().strip() if char not in (' ', '_'))  # config
         self.velocity = velocity  # mm/s, config
         self.camera = camera
         self.img_proc_opts = img_proc_opts
@@ -113,12 +114,12 @@ class Scanner:
 
     @staticmethod
     def rough_laser(img: np.ndarray) -> np.ndarray:
-        return np.argmax(img, axis=0)
+        return np.argmax(img, axis=0).astype(np.float)
 
     @classmethod
     def fine_laser(cls, img: np.ndarray) -> np.ndarray:
         laser = cls.rough_laser(img)
-        for col, row in enumerate(laser):
+        for col, row in enumerate(laser.astype(np.int)):
             if row == 0 or row == img.shape[0] - 1:
                 continue
             prev_row, next_row = row - 1, row + 1
@@ -155,6 +156,21 @@ class Scanner:
     def iggm(img) -> np.ndarray:
         pass
 
+    def extract_laser(self, img):
+        # TODO: make all methods at least class methods
+        modes = {
+            'laplaceofgauss': self.laplace_of_gauss,
+            'log': self.laplace_of_gauss,
+            'maxpeak': self.max_peak,
+            'ggm': self.ggm,
+            'graygravitymethod'
+            'iggm': self.iggm,
+        }
+        laser = modes[self.extraction_mode](img)
+        laser = laser + self.camera.roi[1]
+        laser = np.pad(laser, (self.camera.roi[0], self.camera.frame_width - (self.camera.roi[0] + self.camera.roi[2])))
+        return laser
+
     @property
     def depthmap(self) -> np.ndarray:
         return normalize(self._cloud[..., -1]).copy()
@@ -164,8 +180,6 @@ class Scanner:
         return self._cloud.copy()
 
     def find_local_coords(self, laser: np.ndarray) -> np.ndarray:
-        laser = laser + self.camera.roi[1]
-        laser = np.pad(laser, (self.camera.roi[0], self.camera.frame_width - (self.camera.roi[0] + self.camera.roi[2])))
         dy = laser - self.camera.v0
         dx = np.mgrid[:laser.size] - self.camera.u0
         tg_beta = dy / self.camera.fy
@@ -181,8 +195,9 @@ class Scanner:
 
     def scan(self):
         # self.camera.process_on_iteration = True
-        for img in map(self.camera.process_img, self.camera):
-            laser = getattr(self, self.extraction_mode)(img)
+        for img in self.camera:
+            processed = self.camera.process_img(img)
+            laser = self.extract_laser(processed)
             local_coords = self.find_local_coords(laser)
             global_coords = self.local2global_coords(local_coords)
             self._cloud[self.camera.prev_frame_idx] = global_coords

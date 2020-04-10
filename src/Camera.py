@@ -493,15 +493,34 @@ class CameraCalibrator:
         self.new_mtx, self.roi = cv2.getOptimalNewCameraMatrix(self.mtx, self.dist, image_size, alpha)
         return self.new_mtx, self.roi
 
-    def extrinsic_from_image(self, image):
+    def extrinsic_from_image(self, image, origin=None):
+
+        if origin is None:
+            origin = np.zeros(3, dtype=float)
+        axis = np.float32([[3, 0, 0], [0, 3, 0], [0, 0, 3]]).reshape(-1, 3) * self.square_size
+
+        def draw(img, point, imgpts):
+            point = tuple(point.ravel())
+            X, Y, Z, *_ = [tuple(axis.ravel()) for axis in imgpts]
+            img = cv2.line(img, point, X, (0, 0, 255), 5)  # X - RED
+            cv2.putText(img, 'X', X, cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 255), lineType=cv2.LINE_AA)
+            img = cv2.line(img, point, Y, (0, 255, 0), 5)  # Y - GREEN
+            cv2.putText(img, 'Y', Y, cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), lineType=cv2.LINE_AA)
+            img = cv2.line(img, point, Z, (255, 0, 0), 5)  # Z - BLUE
+            cv2.putText(img, 'Z', Z, cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 0, 0), lineType=cv2.LINE_AA)
+            return img
+
         gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
         rot_mtx, tvec = None, None
         ret, corners = cv2.findChessboardCorners(gray, self.board_size, flags=cv2.CALIB_CB_FAST_CHECK)
         if ret:
             corners = cv2.cornerSubPix(gray, corners, self.win_size, self.zero_zone, self.criteria)
-            cv2.drawChessboardCorners(image, self.board_size, corners, ret)
             ret, rvec, tvec = cv2.solvePnP(self.board_coordinates, corners, self.mtx, self.dist)
             rot_mtx = cv2.Rodrigues(rvec)[0]
+            imgpoints, _ = cv2.projectPoints(np.array([point + origin for point in (np.zeros(3), *axis)]),
+                                             rvec, tvec, self.mtx, self.dist)
+            cv2.drawChessboardCorners(image, self.board_size, corners, ret)
+            draw(image, imgpoints[0].astype(np.int), imgpoints[1:].astype(np.int))
         return ret, rot_mtx, tvec
 
     def calibrate_camera_extrinsic_from_images(self, images):

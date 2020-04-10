@@ -77,6 +77,22 @@ def test_scan():
     show_height_map(pointcloud)
 
 
+def test_scan_artificial():
+    rows, cols = 480, 640
+    fourcc = cv2.VideoWriter_fourcc(*'MP42')
+    out = cv2.VideoWriter('test_scan.mp4', fourcc, 10, (cols, rows))
+    for i in range(479, 238, -1):
+        img = np.zeros((rows, cols), dtype=np.uint8)
+        img[i] = 255
+        out.write(img)
+    out.release()
+    camera.cap = cv2.VideoCapture('test_scan.mp4')
+    camera._roi = None
+    scaner._cloud = np.zeros((camera.frame_count, camera.frame_width, 3))
+    scaner.scan()
+    show_height_map(scaner.pointcloud)
+
+
 def test_scan_calibration_artificial(randomize=False, ampl=1, shift=-0.5):
     images = []
     heights = []

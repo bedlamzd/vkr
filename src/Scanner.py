@@ -48,7 +48,7 @@ class Scanner:
         # calculated values
         self.d = height * self.tg_angle
         self.angle = angle
-        self._cloud = np.zeros((self.camera.frame_count, self.camera.frame_width, 3))
+        self._cloud = np.zeros((self.camera.frame_count, self.camera.frame_width, 3), dtype=np.float)
 
     @staticmethod
     def check_parameters(camera=None, height=None, angle=None, velocity=None, img_proc_opts=None, extraction_opts=None):

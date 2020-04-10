@@ -294,7 +294,7 @@ class ScannerCalibrator:
         results = []  # (tg_alpha, H) pairs for each calculation
         # tangent of the angle between laser ray and optical axis of the camera in each image
         tg_beta = [(self.scanner.laplace_of_gauss(image)[u0] - v0) / self.scanner.camera.fy for image in images]
-        for (tg_betai, zi), (tg_betak, zk) in combinations(zip(tg_beta[1:], z_coordinates[1:]), 2):
+        for (tg_betai, zi), (tg_betak, zk) in combinations(zip(tg_beta, z_coordinates), 2):
             results.append(self.calculate_from_tangent2(zi, tg_betai, 0,
                                                         zk, tg_betak, 0,
                                                         tvec=self.scanner.camera.tvec,

@@ -80,15 +80,15 @@ def get_pcd_of_height_map_with_normals(height_map: np.ndarray, radius=None, knn=
     """
     pcd = get_pcd_of_height_map(height_map)
     if radius is None and knn is None:
-        raise
+        raise TypeError('No radius or knn options given')
     elif knn is None:
         param = open3d.geometry.KDTreeSearchParamRadius(radius)
     elif radius is None:
         param = open3d.geometry.KDTreeSearchParamKNN(knn)
     else:
         param = open3d.geometry.KDTreeSearchParamHybrid(radius, knn)
-    open3d.geometry.estimate_normals(pcd, param)
-    open3d.geometry.orient_normals_to_align_with_direction(pcd, ref)
+    pcd.estimate_normals(param)
+    pcd.orient_normals_to_align_with_direction(ref)
     return pcd
 
 

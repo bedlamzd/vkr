@@ -229,6 +229,12 @@ def fast_calibration(device, board_size=(6, 4), manual=True, autofocus=False, *a
 def fast_pose(device, board_size=(6, 4), autofocus=False, *args, **kwargs):
     from Camera import Camera, CameraCalibrator
 
+    # TODO: make matrix required or positional
+    if 'mtx' not in kwargs:
+        mtx = np.array([[580, 0, 319],
+                        [0, 580, 239],
+                        [0, 0, 1]], dtype=np.float)
+        kwargs['mtx'] = mtx
     cam = Camera(cap=cv2.VideoCapture(device))
     calibrator = CameraCalibrator(board_size=board_size, *args, **kwargs)
     if not autofocus:
@@ -238,7 +244,9 @@ def fast_pose(device, board_size=(6, 4), autofocus=False, *args, **kwargs):
     for img in cam:
         if cv2.waitKey(15) == 27: break
         ret, rot_mtx, tvec = calibrator.extrinsic_from_image(img)
-        if ret: print(f'R = {rot_mtx}\nX = {tvec[0]}\nY = {tvec[1]}\nZ = {tvec[2]}\n')
+        if ret:
+            print('R = {}\nX = {}\nY = {}\nZ = {}\n'.format(rot_mtx, *(tvec)), end='-' * 10 + '\n')
+            print('R = {}\nX = {}\nY = {}\nZ = {}\n'.format(rot_mtx.T, *(rot_mtx.T @ tvec)), end="#" * 10 + '\n')
         cv2.imshow("Video", img)
     cam.cap.release()
     cv2.destroyAllWindows()

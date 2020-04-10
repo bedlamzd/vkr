@@ -3,8 +3,28 @@ from typing import Tuple
 import numpy as np
 from ezdxf.math.vector import Vector
 
+
 @dataclass
 class Mark:
+    """
+    dataclass for storing info on a single mark on a table
+
+           |  width |
+
+           /re----fs\     - height
+    ____rs/__________\fe______
+
+          |          |
+          |  length  |
+
+    idc: indices corresponding to raise start, raise end, fall start, fall end of a mark in a laser
+    coords: coordinates corresponding to raise start, raise end, fall start, fall end of a mark
+    height: average of raise end and fall start heights
+    length: plane length from raise start to fall end
+    width: plane length from raise end to fall start
+    rais: plane length of raise section
+    fall: plane length of fall section
+    """
     idc: Tuple[int]
     coords: Tuple
     height: float = field(init=False)
@@ -24,6 +44,13 @@ class Mark:
 
 @dataclass
 class Checkpoint:
+    """
+    dataclass storing info of a sequence of marks
+
+    marks: all marks in checkpoint in left to right order
+    n: number of marks in checkpoint
+    gaps: length of gaps between neighbouring checkpoints
+    """
     marks: Tuple[Mark]
     n: int = field(init=False)
     gaps: Tuple = field(init=False)

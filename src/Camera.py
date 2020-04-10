@@ -46,7 +46,7 @@ def find_camera_angle(view_width: float,  # mm
     return camera_angle
 
 
-def xyz2uv(xyz, mtx, rot_mtx=None, t_vec=None, *, T=None):
+def xyz2uv(xyz, mtx, rot_mtx=None, t_vec=None, *, T=None) -> np.ndarray:
     """
     Given camera intrinsic matrix calculate image plane coordinates of a real 3d point
     :param xyz: coordinates of a point in WSC

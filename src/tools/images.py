@@ -259,3 +259,12 @@ def take_shot(device, dir='.', name_template='shot%d'):
             print(f'Shot taken. {name}')
     cv2.destroyAllWindows()
     cam.cap.release()
+
+
+def draw_text(img, text: str, org, fontFace, fontScale, color, thickness, spacing=2, **kwargs):
+    lines = text.splitlines()
+    cv2.putText(img, lines[0], org, fontFace, fontScale, color, thickness, **kwargs)
+    text_height = 0
+    for line in lines[1:]:
+        text_height += spacing + cv2.getTextSize(line, fontFace, fontScale, thickness)[0][1]
+        cv2.putText(img, line, (org[0], org[1] + text_height), fontFace, fontScale, color, thickness, **kwargs)

@@ -1,6 +1,7 @@
 from dataclasses import dataclass, field
 from typing import Tuple
 import numpy as np
+import json
 from ezdxf.math.vector import Vector
 
 
@@ -61,9 +62,130 @@ class Checkpoint:
             self.marks[i - 1].coords[-1].xy.distance(self.marks[i].coords[0].xy) for i in range(1, self.n))
 
 
+class Checker:
+    # TODO: testing
+    # mapping constants which represent impulse values
+    a = 1
+    b = 3
+    # mapping of possible sequence impulses to be marks
+    mapping = {a: ['end'],
+               b: [-b, -(a + b)],
+               a + b: [-b, -(a + b)],
+               -a: [a + b],
+               -b: ['end'],
+               -(a + b): [a]}
+
+    _config_attr = [
+        'height',
+        'width',
+        'gaps',
+        'n',
+        'tol',
+        'gap_tol',
+        'height_tol',
+        'width_tol'
+    ]
+
+    def __init__(self, height, widths, gaps, n, tol=.5, *, gap_tol=None, height_tol=None, width_tol=None):
+        self.expected_height = height
+        self.expected_widths = widths
+        self.expected_gaps = gaps
+        self.expected_n = n
+        self.gap_tol = gap_tol or 2 * tol
+        self.height_tol = height_tol or tol
+        self.width_tol = width_tol or tol
+
+    @classmethod
+    def load_json(cls, filepath) -> 'Checker':
+        data = json.load(open(filepath))
+        data = {attr: value for attr, value in data.items() if attr in cls._config_attr}
+        return cls(**data)
+
+
+    def make_sequence(self, coords):
+        sequence = np.copy(coords[..., 2])
+        sequence[np.abs(sequence) < self.height_tol] = 0
+        sequence[(sequence != 0) & (np.abs(sequence - self.expected_height) > self.height_tol)] = -self.a
+        sequence[sequence > 0] = self.b
+        return np.diff(sequence, prepend=0, append=0)[1:-1]
+
+    def make_marks(self, coords):
+        sequence = self.make_sequence(coords)
+        stack = []
+        idc = []
+        marks = []
+        for idx, item in enumerate(sequence):
+            try:
+                if not self.mapping.get(item):
+                    continue
+                elif 'end' in self.mapping.get(item) and stack and item in self.mapping.get(stack[-1]):
+                    stack.append(item)
+                    idc = idc + [idx, idx] if item == -self.b else idc + [idx]
+                    if len(idc) == 2:
+                        print()
+                    marks.append(Mark(idc, coords[idc]))
+                    stack = []
+                    idc = []
+                    continue
+            except IndexError:
+                print()
+            if (not stack and item in (-self.a, self.b)) or (stack and item in self.mapping.get(stack[-1], [])):
+                stack.append(item)
+                idc = idc + [idx, idx] if item == self.b else idc + [idx]
+            else:
+                stack = []
+                idc = []
+        return marks
+
+    def make_checkpoint(self, coords):
+        marks = self.make_marks(coords)
+        checkpoint = Checkpoint(marks) if marks else False
+        return checkpoint
+
+    def check_gaps(self, checkpoint: Checkpoint):
+        if not self.expected_gaps:
+            return True
+        else:
+            actual_gaps = np.array(checkpoint.gaps)
+            try:
+                gaps_errors = np.abs(actual_gaps - self.expected_gaps)
+            except ValueError:  # happens when there is size mismatch
+                return False
+        return np.all(gaps_errors < self.gap_tol)
+
+    def check_widths(self, checkpoint: Checkpoint):
+        if not self.expected_widths:
+            return True
+        else:
+            actual_widths = np.array([mark.width for mark in checkpoint.marks])
+            try:
+                width_errors = np.abs(actual_widths - self.expected_widths)
+            except ValueError:  # happens when there is size mismatch
+                return False
+        return np.all(width_errors < self.width_tol)
+
+    def check_n(self, checkpoint: Checkpoint):
+        """
+        check if number of marks match expected quantity if expected at all
+
+        :param checkpoint:
+        :return:
+        """
+        return not self.expected_n or checkpoint.n == self.expected_n
+
+    def check_all(self, checkpoint: Checkpoint):
+        return self.check_n(checkpoint) and self.check_widths(checkpoint) and self.check_gaps(checkpoint)
+
+    def __call__(self, coords):
+        checkpoint = self.make_checkpoint(coords)
+        if checkpoint and self.check_all(checkpoint):
+            return True, checkpoint
+        else:
+            return False, None
+
+
 def checker(coords, height, width=None, gaps=None, n: int = None, tol: float = 0.5, *, a: int = 1, b: int = 3,
             **kwargs) -> (bool, Checkpoint):
-    # TODO: переписать как класс
     gap_tol = kwargs.get('gap_tol', 2 * tol)
     height_tol = kwargs.get('height_tol', tol)
     width_tol = kwargs.get('width_tol', tol)

@@ -4,6 +4,7 @@ import numpy as np
 from numpy import tan
 from typing import Tuple, Optional, Sequence
 from Camera import Camera
+from StartDetector import Checker
 from tools.general import normalize, avg
 
 from itertools import combinations
@@ -23,7 +24,9 @@ class Scanner:
         'extraction_opts'
     ]
 
-    def __init__(self, camera: Optional[Camera] = None,
+    def __init__(self,
+                 camera: Optional[Camera] = None,
+                 checker: Optional[Checker] = None,
                  height: Optional[float] = 0,
                  angle: Optional[float] = 0,
                  velocity: Optional[np.ndarray] = None,
@@ -43,6 +46,7 @@ class Scanner:
             char for char in extraction_mode.lower().strip() if char not in (' ', '_'))  # config
         self.velocity = velocity  # mm/s, config
         self.camera = camera
+        self.checker = checker  # type: Checker
         self.img_proc_opts = img_proc_opts
         self.extraction_opts = extraction_opts
         # calculated values
@@ -68,11 +72,11 @@ class Scanner:
         else getattr(self, attribute) for attribute in self._config_attr}
 
     @classmethod
-    def from_json(cls, camera: Camera, filepath: str) -> 'Scanner':
+    def load_json(cls, filepath: str, camera: Camera = None, checker: Checker = None) -> 'Scanner':
         data = json.load(open(filepath))
         data = {attr: np.array(value) if isinstance(value, Sequence) else value
                 for attr, value in data.items() if attr in cls._config_attr}
-        return cls(camera=camera, **data)
+        return cls(camera=camera, checker=checker, **data)
 
     def dump_json(self, filepath='src/scanner.json', **kwargs):
         json.dump(self.config_data, open(filepath, 'w'), **kwargs)
@@ -205,6 +209,30 @@ class Scanner:
             # camera.tvec[0] += camera.frame_timing * self.velocity - camera.tvec[0] # using timing
         # self.camera.process_on_iteration = False
 
+    def bind_coordinates(self):
+        pcd = self.pointcloud
+        leftmost_wcs = (0, 0, 0)
+        rightmost_wcs = (0, 1, 0)
+        (u1, v1) = self.camera.xyz2uv(leftmost_wcs)
+        (u2, v2) = self.camera.xyz2uv(rightmost_wcs)
+        if u2 < u1:  # if second point left than first swap them
+            (u1, v1), (u2, v2) = (u2, v2), (u1, v1)
+        tg_theta = (v2 - v1) / (u2 - u1)
+        col_idc = np.mgrid[:pcd.shape[1]]
+        row_idc = (col_idc * tg_theta).astype(int)
+        for i in range(pcd.shape[0]):
+            try:
+                found, checkpoint = self.checker(pcd[row_idc, col_idc])
+            except IndexError:
+                print('No checkpoint found')
+                break
+            if found:
+                translation = self.checker.ref_coord - checkpoint.ref_coord
+                self._cloud += translation if not np.isnan(translation).any() else 0
+                print('Checkpoint found')
+                break
+            row_idc += 1
+
 
 class ScannerCalibrator:
     def __init__(self, scanner):
@@ -304,12 +332,14 @@ class ScannerCalibrator:
         return self.tg_alpha, self.h
 
 
-def scan(video_path: str, camera_config: str, scaner_config: str):
+def scan(video_path: str, camera_config: str, scaner_config: str, checker_config: str):
     # TODO: create main file where objects construction happens and all work.
     #       Including final object detection, gcode generation, dxf processing and so on
     cap = cv2.VideoCapture(video_path)
-    camera = Camera.from_json(camera_config, cap)
-    scanner = Scanner.from_json(camera, scaner_config)
+    camera = Camera.load_json(filepath=camera_config, cap=cap)
+    checker = Checker.load_json(filepath=checker_config)
+    scanner = Scanner.load_json(filepath=scaner_config, camera=camera, checker=checker)
     scanner.scan()
+    scanner.bind_coordinates()
     depthmap = scanner.depthmap
     pointcloud = scanner.pointcloud

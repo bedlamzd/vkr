@@ -177,7 +177,12 @@ class Scanner:
 
     @property
     def depthmap(self) -> np.ndarray:
-        return normalize(self._cloud[..., -1]).copy()
+        depthmap = self.pointcloud[..., -1]
+        try:
+            depthmap[np.isnan(depthmap)] = np.min(depthmap[np.isfinite(depthmap)])
+        except ValueError:
+            depthmap[np.isnan(depthmap)] = 0
+        return normalize(depthmap)
 
     @property
     def pointcloud(self) -> np.ndarray:

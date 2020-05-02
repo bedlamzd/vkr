@@ -64,7 +64,8 @@ def get_pcd_of_height_map(height_map: np.ndarray) -> open3d.geometry.PointCloud:
     :return: облако точек
     """
     pcd = open3d.geometry.PointCloud()
-    pcd.points = open3d.utility.Vector3dVector(height_map.copy().reshape(height_map.size // 3, 3))
+    hm = height_map.copy().reshape(height_map.size // 3, 3)
+    pcd.points = open3d.utility.Vector3dVector(hm[~np.isnan(hm).any(axis=1)])
     return pcd
 
 

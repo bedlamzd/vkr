@@ -163,7 +163,7 @@ class Scanner:
             'log': self.laplace_of_gauss,
             'maxpeak': self.max_peak,
             'ggm': self.ggm,
-            'graygravitymethod'
+            'graygravitymethod': self.ggm,
             'iggm': self.iggm,
         }
         laser = modes[self.extraction_mode](img)

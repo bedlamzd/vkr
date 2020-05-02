@@ -146,9 +146,10 @@ class Checker:
     def make_sequence(self, coords):
         sequence = np.copy(coords[..., 2])
         sequence[np.abs(sequence) < self.height_tol] = 0
-        sequence[(sequence != 0) & (np.abs(sequence - self.expected_height) > self.height_tol)] = -self.a
-        sequence[sequence > 0] = self.b
-        return np.diff(sequence, prepend=0, append=0)[1:-1]
+        sequence[(sequence != 0) & (np.abs(sequence - self.expected_height) > self.height_tol)] = -self._a
+        sequence[(sequence != -self._a) & (sequence != 0) & (~np.isnan(sequence))] = self._b
+        sequence = np.diff(sequence, prepend=0, append=0)[1:-1]
+        return sequence
 
     def make_marks(self, coords):
         sequence = self.make_sequence(coords)

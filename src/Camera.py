@@ -301,6 +301,10 @@ class Camera:
         """
         return int(self.cap.get(cv2.CAP_PROP_FRAME_COUNT))
 
+    @property
+    def video_ended(self):
+        return self.next_frame_idx == self.frame_count
+
     def get_mask(self, img: np.ndarray) -> np.ndarray:
         if self.threshold == 0:
             _, mask = cv2.threshold(img, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)

@@ -8,7 +8,10 @@ def nothing(*args, **kwargs):
 
 def normalize(img: np.ndarray, value=1) -> np.ndarray:
     array = img.copy().astype(np.float64)
-    array = (array - array.min()) / (array.max() - array.min()) * value
+    min = array.min()
+    rrange = array.max() - min
+    if rrange != 0:
+        array = (array - min) / rrange * value
     return array
 
 def pairwise(iterable):

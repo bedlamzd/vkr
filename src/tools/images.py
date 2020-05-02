@@ -6,6 +6,7 @@ import imutils
 
 from typing import Union, List
 
+from Camera import Camera
 from src.tools.general import nothing
 
 
@@ -128,42 +129,55 @@ def select_hsv_values(video):
     :param video: видеопоток либо с камеры либо из файла
     :return:
     """
-    params = {'h1': 0, 'h2': 255, 's1': 0, 's2': 255, 'v1': 0, 'v2': 255}
+    hsv_params = {'h1': 0, 'h2': 255, 's1': 0, 's2': 255, 'v1': 0, 'v2': 255}
+    gauss_params = {'sigmaX': 0, 'ksize': (3,3)}
+    morph_params = {'iterations': 0, 'kernel': np.ones((3,3), dtype=np.uint8)}
     setwin = 'hsv_set'
     reswin = 'result'
     cv2.namedWindow(setwin, cv2.WINDOW_NORMAL)
     cv2.namedWindow(reswin, cv2.WINDOW_NORMAL)
-    for key in params:
-        cv2.createTrackbar(key, setwin, params[key], 255, nothing)
+    for key in hsv_params:
+        cv2.createTrackbar(key, setwin, hsv_params[key], 255, nothing)
+    cv2.createTrackbar('sigma', setwin, 0, 10000, lambda v: gauss_params.update({'sigmaX': v / 100}))
+    cv2.createTrackbar('ksize', setwin, 0, 50,
+                       lambda v: gauss_params.update({'ksize': (int(2 * v + 1), int(2 * v + 1))}))
+    cv2.createTrackbar('iterations', setwin, 0, 50, lambda v: morph_params.update({'iterations': int(v)}))
+    cv2.createTrackbar('kernel', setwin, 0, 50,
+                       lambda v: morph_params.update({'kernel': np.ones((int(v),int(v)), dtype=np.uint8)}))
     cv2.createTrackbar('mask', setwin, 0, 1, nothing)
+    cv2.createTrackbar('gauss', setwin, 0, 1, nothing)
+    cv2.createTrackbar('morph', setwin, 0, 1, nothing)
 
     # noinspection PyShadowingNames
     def get_params(win='hsv_set'):
-        for key in params:
-            params[key] = int(cv2.getTrackbarPos(key, win))
+        for key in hsv_params:
+            hsv_params[key] = int(cv2.getTrackbarPos(key, win))
         m = int(cv2.getTrackbarPos('mask', setwin))
-        hsv_lower = tuple(params[k] for k in ['h1', 's1', 'v1'])
-        hsv_upper = tuple(params[k] for k in ['h2', 's2', 'v2'])
-        return hsv_lower, hsv_upper, m
+        g = int(cv2.getTrackbarPos('gauss', setwin))
+        morph = int(cv2.getTrackbarPos('morph', setwin))
+        hsv_lower = tuple(hsv_params[k] for k in ['h1', 's1', 'v1'])
+        hsv_upper = tuple(hsv_params[k] for k in ['h2', 's2', 'v2'])
+        return hsv_lower, hsv_upper, m, g, morph
 
     cap = cv2.VideoCapture(video)
-    lowerb, upperb = (0, 0, 0), (255, 255, 255)
-    while cap.isOpened():
-        ret, frame = cap.read()
-        if ret is True:
-            hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
-            lowerb, upperb, m = get_params(setwin)
-            hsv = cv2.inRange(hsv, lowerb, upperb, None)
-            result = cv2.bitwise_and(frame, frame, mask=hsv) if m == 1 else hsv
-            cv2.imshow(reswin, result)
-        else:
-            cap.set(cv2.CAP_PROP_POS_FRAMES, 0)
+    cam = Camera(cap=cap)
+    lower_bound, upper_bound = (0, 0, 0), (255, 255, 255)
+    for frame in cam:
+        hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
+        lower_bound, upper_bound, m, g, morph = get_params(setwin)
+        hsv = cv2.inRange(hsv, lower_bound, upper_bound)
+        result = cv2.bitwise_and(frame, frame, mask=hsv) if m else hsv
+        result = cv2.GaussianBlur(result, **gauss_params) if g else result
+        result = cv2.morphologyEx(result, cv2.MORPH_OPEN, **morph_params) if morph else result
+        cv2.imshow(reswin, result)
+        if cam.video_ended:
+            cam.next_frame_idx = 0
         ch = cv2.waitKey(15)
         if ch == 27:
             break
     cap.release()
     cv2.destroyAllWindows()
-    return lowerb, upperb
+    return lower_bound, upper_bound
 
 
 def decor_stream2img(img_func):

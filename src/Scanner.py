@@ -181,7 +181,9 @@ class Scanner:
 
     @property
     def pointcloud(self) -> np.ndarray:
-        return self._cloud.copy()
+        pointcloud = np.copy(self._cloud)
+        pointcloud[np.isnan(pointcloud).any(axis=2)] = (np.nan, np.nan, np.nan)
+        return pointcloud
 
     def find_local_coords(self, laser: np.ndarray) -> np.ndarray:
         dy = laser - self.camera.v0

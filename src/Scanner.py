@@ -171,8 +171,10 @@ class Scanner:
             'iggm': self.iggm,
         }
         laser = modes[self.extraction_mode](img)
+        laser[laser == 0] = np.nan
         laser = laser + self.camera.roi[1]
-        laser = np.pad(laser, (self.camera.roi[0], self.camera.frame_width - (self.camera.roi[0] + self.camera.roi[2])))
+        laser = np.pad(laser, (self.camera.roi[0], self.camera.frame_width - (self.camera.roi[0] + self.camera.roi[2])),
+                       constant_values=np.nan)
         return laser
 
     @property

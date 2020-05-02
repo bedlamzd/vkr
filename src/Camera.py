@@ -139,7 +139,7 @@ class Camera:
         else getattr(self, attribute) for attribute in self._config_attr}
 
     @classmethod
-    def from_json(cls, filepath: str = 'src/camera.json', cap: Optional[VideoCapture] = None) -> 'Camera':
+    def load_json(cls, filepath: str = 'src/camera.json', cap: Optional[VideoCapture] = None) -> 'Camera':
         data = json.load(open(filepath))
         data = {attr: np.array(value) if isinstance(value, Sequence) else value
                 for attr, value in data.items() if attr in cls._config_attr}

@@ -377,6 +377,8 @@ class Camera:
         self.optimal_mtx, roi = cv2.getOptimalNewCameraMatrix(self.mtx, self.dist, self.frame_size, alpha)
         self.next_frame_idx = 0
 
+    def xyz2uv(self, xyz):
+        return xyz2uv(xyz, self.mtx, T=self.extrinsic_mtx)
 
 class CameraCalibrator:
     # TODO: extrinsic camera calibration

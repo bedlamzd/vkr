@@ -1,5 +1,5 @@
 from dataclasses import dataclass, field
-from typing import Tuple
+from typing import Tuple, Sequence, Optional
 import numpy as np
 import json
 from ezdxf.math.vector import Vector
@@ -52,7 +52,7 @@ class Checkpoint:
     n: number of marks in checkpoint
     gaps: length of gaps between neighbouring checkpoints
     """
-    marks: Tuple[Mark]
+    marks: Sequence[Mark]
     n: int = field(init=False)
     gaps: Tuple = field(init=False)
 

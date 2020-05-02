@@ -3,6 +3,7 @@ from typing import Tuple, Sequence, Optional
 import numpy as np
 import json
 from ezdxf.math.vector import Vector
+from tools.general import pairwise
 
 
 @dataclass
@@ -28,19 +29,49 @@ class Mark:
     """
     idc: Tuple[int]
     coords: Tuple
-    height: float = field(init=False)
-    length: float = field(init=False)
-    width: float = field(init=False)
-    rais: float = field(init=False)
-    fall: float = field(init=False)
 
     def __post_init__(self):
-        self.coords = tuple(Vector(coord) for coord in self.coords)
-        self.height = (self.coords[1].z + self.coords[-2].z) / 2
-        self.length = self.coords[0].xy.distance(self.coords[-1].xy)
-        self.width = self.coords[1].xy.distance(self.coords[-2].xy)
-        self.rais = self.coords[0].xy.distance(self.coords[1].xy)
-        self.fall = self.coords[-2].xy.distance(self.coords[-1].xy)
+        self.coords = tuple(Vector(coord) for coord in self.coords)  # type: Tuple[Vector]
+
+    @property
+    def raise_start(self) -> Vector:
+        return self.coords[0]
+
+    @property
+    def raise_end(self) -> Vector:
+        return self.coords[1]
+
+    @property
+    def fall_start(self) -> Vector:
+        return self.coords[2]
+
+    @property
+    def fall_end(self) -> Vector:
+        return self.coords[3]
+
+    @property
+    def height(self):
+        return (self.raise_end.z + self.fall_start.z) / 2
+
+    @property
+    def width(self):
+        return self.raise_end.xy.distance(self.fall_start.xy)
+
+    @property
+    def length(self):
+        return self.raise_start.xy.distance(self.fall_end.xy)
+
+    @property
+    def raise_length(self):
+        return self.raise_start.xy.distance(self.raise_end.xy)
+
+    @property
+    def fall_length(self):
+        return self.fall_start.xy.distance(self.fall_end.xy)
+
+    @property
+    def center(self):
+        return self.raise_end.xy + self.width / 2
 
 
 @dataclass
@@ -58,22 +89,27 @@ class Checkpoint:
 
     def __post_init__(self):
         self.n = len(self.marks)
-        self.gaps = tuple(
-            self.marks[i - 1].coords[-1].xy.distance(self.marks[i].coords[0].xy) for i in range(1, self.n))
+        self.gaps = tuple(mark1.fall_end.xy.distance(mark2.raise_start.xy) for mark1, mark2 in pairwise(self.marks))
+
+    @property
+    def ref_coord(self):
+        return self.marks[0].center.xy
+
+    def __iter__(self):
+        return iter(self.marks)
 
 
 class Checker:
-    # TODO: testing
     # mapping constants which represent impulse values
-    a = 1
-    b = 3
+    _a = 1
+    _b = 3
     # mapping of possible sequence impulses to be marks
-    mapping = {a: ['end'],
-               b: [-b, -(a + b)],
-               a + b: [-b, -(a + b)],
-               -a: [a + b],
-               -b: ['end'],
-               -(a + b): [a]}
+    _mapping = {_a: ['end'],
+                _b: [-_b, -(_a + _b)],
+               _a + _b: [-_b, -(_a + _b)],
+                -_a: [_a + _b],
+                -_b: ['end'],
+                -(_a + _b): [_a]}
 
     _config_attr = [
         'height',
@@ -86,14 +122,19 @@ class Checker:
         'width_tol'
     ]
 
-    def __init__(self, height, widths, gaps, n, tol=.5, *, gap_tol=None, height_tol=None, width_tol=None):
+    def __init__(self, height, widths, gaps, n, tol=.5,
+                 ref_coord=(0, 0, 0), *,
+                 gap_tol=None,
+                 height_tol=None,
+                 width_tol=None):
         self.expected_height = height
         self.expected_widths = widths
         self.expected_gaps = gaps
         self.expected_n = n
         self.gap_tol = gap_tol or 2 * tol
         self.height_tol = height_tol or tol
-        self.width_tol = width_tol or tol
+        self.width_tol = width_tol or 2 * tol
+        self.ref_coord = Vector(ref_coord)
 
     @classmethod
     def load_json(cls, filepath) -> 'Checker':
@@ -116,11 +157,11 @@ class Checker:
         marks = []
         for idx, item in enumerate(sequence):
             try:
-                if not self.mapping.get(item):
+                if not self._mapping.get(item):
                     continue
-                elif 'end' in self.mapping.get(item) and stack and item in self.mapping.get(stack[-1]):
+                elif 'end' in self._mapping.get(item) and stack and item in self._mapping.get(stack[-1]):
                     stack.append(item)
-                    idc = idc + [idx, idx] if item == -self.b else idc + [idx]
+                    idc = idc + [idx, idx] if item == -self._b else idc + [idx]
                     if len(idc) == 2:
                         print()
                     marks.append(Mark(idc, coords[idc]))
@@ -129,9 +170,9 @@ class Checker:
                     continue
             except IndexError:
                 print()
-            if (not stack and item in (-self.a, self.b)) or (stack and item in self.mapping.get(stack[-1], [])):
+            if (not stack and item in (-self._a, self._b)) or (stack and item in self._mapping.get(stack[-1], [])):
                 stack.append(item)
-                idc = idc + [idx, idx] if item == self.b else idc + [idx]
+                idc = idc + [idx, idx] if item == self._b else idc + [idx]
             else:
                 stack = []
                 idc = []
@@ -176,7 +217,7 @@ class Checker:
     def check_all(self, checkpoint: Checkpoint):
         return self.check_n(checkpoint) and self.check_widths(checkpoint) and self.check_gaps(checkpoint)
 
-    def __call__(self, coords):
+    def __call__(self, coords) -> (bool, Optional[Checkpoint]):
         checkpoint = self.make_checkpoint(coords)
         if checkpoint and self.check_all(checkpoint):
             return True, checkpoint

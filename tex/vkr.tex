@@ -1,0 +1,18 @@
+\include{preambula}
+
+\setpythontexworkingdir{D://Repositories//vkr//}
+\graphicspath{{./../img/}}
+
+\begin{pycode}
+    import os
+    import sys
+    
+    cwd = os.getcwd()
+    sys.path.append(cwd+r'\src')
+\end{pycode}
+
+\begin{document}
+    \input{introduction}
+    \input{01-analogi}
+\end{document}
+

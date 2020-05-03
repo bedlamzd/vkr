@@ -215,13 +215,13 @@ def mls_height_apprx(height_map, point, **kwargs) -> float:
         degree - порядок полинома для аппроксимации в формате (xm, ym) (default - (1,1))
     :return:
     """
-    sup_r = kwargs.get('support_radius', 1.)
-    deg = kwargs.get('degree', (1, 1))
-    data = height_map.reshape(height_map.size // 3, 3)
-    cond = np.sum(np.power(data[:, :2] - point[:2], 2), axis=1) <= sup_r ** 2
+    support_radius = kwargs.get('support_radius', 1.)
+    degree = kwargs.get('degree', (1, 1))
+    data = height_map[np.isfinite(height_map).all(axis=-1)].copy().reshape(-1, 3)
+    cond = np.sum(np.power(data[:, :2] - point[:2], 2), axis=1) <= support_radius ** 2
     data = data[cond] - (point[X], point[Y], 0)
-    if data.size >= ((deg[0] + 1) * (deg[1] + 1)):
-        c = mls3d(data, (0, 0), sup_r, deg).reshape((deg[0] + 1, deg[1] + 1))
+    if data.size >= ((degree[0] + 1) * (degree[1] + 1)):
+        c = mls3d(data, (0, 0), support_radius, degree).reshape((degree[0] + 1, degree[1] + 1))
         z = polyval2d(0, 0, c)
         return z
     else:

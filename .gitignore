@@ -1,6 +1,7 @@
 /.idea
 /venv*
 /img
+__pycache__/
 /tex/pythontex*
 *.ini
 *.mp4
@@ -15,3 +16,7 @@
 *.aux
 *.log
 *.pytxcode
+*.out
+*.bcf
+*.xml
+

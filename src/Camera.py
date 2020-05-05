@@ -141,7 +141,7 @@ class Camera:
     @classmethod
     def load_json(cls, filepath: str = 'src/camera.json', cap: Optional[VideoCapture] = None) -> 'Camera':
         data = json.load(open(filepath))
-        data = {attr: np.array(value) if isinstance(value, Sequence) else value
+        data = {attr: np.array(value) if isinstance(value, (Tuple, List)) else value
                 for attr, value in data.items() if attr in cls._config_attr}
         return cls(cap=cap, **data)
 
@@ -219,7 +219,7 @@ class Camera:
     @property
     def roi(self) -> Optional[Tuple]:
         try:
-            return self._roi if self._roi else (0, 0, *self.frame_size)
+            return self._roi if self._roi is not None else (0, 0, *self.frame_size)
         except AssertionError:
             return None
 

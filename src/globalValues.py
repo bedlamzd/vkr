@@ -3,7 +3,7 @@ from numpy import loadtxt, float32, ndarray, savetxt
 from os.path import isfile
 import configparser
 
-config_path = 'settings.ini'
+config_path = r'D:\Repositories\vkr\src\settings.ini'
 
 
 def string2list(sep=' ', f=None):

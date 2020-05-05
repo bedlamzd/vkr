@@ -113,7 +113,7 @@ class Checker:
 
     _config_attr = [
         'height',
-        'width',
+        'widths',
         'gaps',
         'n',
         'tol',

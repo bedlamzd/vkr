@@ -2,7 +2,7 @@ import cv2
 import json
 import numpy as np
 from numpy import tan
-from typing import Tuple, Optional, Sequence
+from typing import Tuple, Optional, Sequence, List
 from Camera import Camera
 from StartDetector import Checker
 from tools.general import normalize, avg
@@ -47,8 +47,8 @@ class Scanner:
         self.velocity = velocity  # mm/s, config
         self.camera = camera
         self.checker = checker  # type: Checker
-        self.img_proc_opts = img_proc_opts
-        self.extraction_opts = extraction_opts
+        self.img_proc_opts = img_proc_opts or dict()
+        self.extraction_opts = extraction_opts or dict()
         # calculated values
         self.d = height * self.tg_angle
         self.angle = angle
@@ -74,7 +74,7 @@ class Scanner:
     @classmethod
     def load_json(cls, filepath: str, camera: Camera = None, checker: Checker = None) -> 'Scanner':
         data = json.load(open(filepath))
-        data = {attr: np.array(value) if isinstance(value, Sequence) else value
+        data = {attr: np.array(value) if isinstance(value, (Tuple, List)) else value
                 for attr, value in data.items() if attr in cls._config_attr}
         return cls(camera=camera, checker=checker, **data)
 
@@ -184,7 +184,8 @@ class Scanner:
             depthmap[np.isnan(depthmap)] = np.min(depthmap[np.isfinite(depthmap)])
         except ValueError:
             depthmap[np.isnan(depthmap)] = 0
-        return normalize(depthmap)
+        depthmap = normalize(depthmap, 255).astype(np.uint8)
+        return depthmap
 
     @property
     def pointcloud(self) -> np.ndarray:

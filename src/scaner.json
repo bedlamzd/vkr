@@ -1,7 +1,12 @@
 {
-  "height": 0,
-  "angle": 0,
-  "velocity": 0,
+  "height": 173.87,
+  "angle": 0.4841,
+  "velocity": [
+    -5,
+    0,
+    0
+  ],
   "img_proc_opts": null,
+  "extraction_mode": "log",
   "extraction_opts": null
 }

@@ -65,7 +65,7 @@ def gcode_generator(dwg: Drawing, cookies: Optional[List[Cookie]] = None,
         gcode += gcode_comment(f'{count:3d} cookie')
         dwg.center = cookie.center[:2]
         dwg.rotation = cookie.rotation
-        dwg.add_z(height_map or cookie.height_map, point_apprx=point_apprx, height=kwargs.get('height', 0))
+        dwg.add_z(cookie.height_map if height_map is None else height_map, point_apprx=point_apprx, height=kwargs.get('height', 0))
         for layer_index, layer in enumerate(sorted(dwg.layers.values(), key=lambda x: x.priority)):
             gcode += gcode_comment(f'{layer_index:3d} layer: {layer.name} in drawing')
             if layer.name == 'Contour':  # or layer.priority == 0:

@@ -4,7 +4,7 @@ import cv2
 import numpy as np
 import imutils
 
-from typing import Union, List
+from typing import Union, List, Optional
 
 from Camera import Camera
 from tools.general import nothing
@@ -130,8 +130,8 @@ def select_hsv_values(video):
     :return:
     """
     hsv_params = {'h1': 0, 'h2': 255, 's1': 0, 's2': 255, 'v1': 0, 'v2': 255}
-    gauss_params = {'sigmaX': 0, 'ksize': (3,3)}
-    morph_params = {'iterations': 0, 'kernel': np.ones((3,3), dtype=np.uint8)}
+    gauss_params = {'sigmaX': 0, 'ksize': (3, 3)}
+    morph_params = {'iterations': 0, 'kernel': np.ones((3, 3), dtype=np.uint8)}
     setwin = 'hsv_set'
     reswin = 'result'
     cv2.namedWindow(setwin, cv2.WINDOW_NORMAL)
@@ -143,7 +143,7 @@ def select_hsv_values(video):
                        lambda v: gauss_params.update({'ksize': (int(2 * v + 1), int(2 * v + 1))}))
     cv2.createTrackbar('iterations', setwin, 0, 50, lambda v: morph_params.update({'iterations': int(v)}))
     cv2.createTrackbar('kernel', setwin, 0, 50,
-                       lambda v: morph_params.update({'kernel': np.ones((int(v),int(v)), dtype=np.uint8)}))
+                       lambda v: morph_params.update({'kernel': np.ones((int(v), int(v)), dtype=np.uint8)}))
     cv2.createTrackbar('mask', setwin, 0, 1, nothing)
     cv2.createTrackbar('gauss', setwin, 0, 1, nothing)
     cv2.createTrackbar('morph', setwin, 0, 1, nothing)
@@ -292,3 +292,29 @@ def draw_text(img, text: str, org, fontFace, fontScale, color, thickness, spacin
     for line in lines[1:]:
         text_height += spacing + cv2.getTextSize(line, fontFace, fontScale, thickness)[0][1]
         cv2.putText(img, line, (org[0], org[1] + text_height), fontFace, fontScale, color, thickness, **kwargs)
+
+
+def draw_laser(img: np.ndarray, laser: np.ndarray, coords: Optional[np.ndarray] = None):
+    col_idx = np.isfinite(laser)
+    row_idx = laser[col_idx]
+    img[row_idx.astype(int), col_idx] = (0, 255, 0) # draw laser line
+    tmplt = 'X = {:4.2f}\nY ={:4.2f}\nZ = {:4.2f}'
+    if coords is not None:
+        max_col = np.nanargmax(coords[:, 2])
+        max_row = laser[max_col].astype(int)
+        max_coord = coords[max_col]
+        cv2.circle(img, (max_col, max_row), 3, (0, 0, 255), -1)
+        draw_text(img, tmplt.format(*max_coord),
+                  org=(max_col, max_row),
+                  fontFace=cv2.FONT_HERSHEY_SIMPLEX,
+                  fontScale=.5,
+                  color=(0, 0, 255),
+                  thickness=1,
+                  lineType=cv2.LINE_AA)
+    draw_text(img, tmplt.format(*coords[img.shape[1] // 2]),
+              org=(img.shape[1] // 2, laser[img.shape[1] // 2].astype(int)),
+              fontFace=cv2.FONT_HERSHEY_SIMPLEX,
+              fontScale=.5,
+              color=(255, 0, 0),
+              thickness=1,
+              lineType=cv2.LINE_AA)

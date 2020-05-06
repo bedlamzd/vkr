@@ -69,9 +69,11 @@ class Cookie:
             contour = self.contour_center_local
         else:
             raise Exception
-        return np.asarray([[(self.height_map[point[0, 1], point[0, 0], Y],
-                             self.height_map[point[0, 1], point[0, 0], X])]
-                           for point in contour], dtype=np.float32)
+        contour_mm = np.asarray([[(self.height_map[point[0, 1], point[0, 0], Y],
+                                   self.height_map[point[0, 1], point[0, 0], X])]
+                                 for point in contour if ~np.isnan(point).any()], dtype=np.float32)
+        contour_mm = contour_mm[np.isfinite(contour_mm).all(axis=-1)]
+        return contour_mm
 
     @property
     def center(self) -> tuple:

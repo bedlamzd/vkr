@@ -1,7 +1,8 @@
 %% Essential settings
 \documentclass[%
 bachelor,    % тип документа
-%natbib,      % использовать пакет natbib для "сжатия" цитирований
+notitlepage, % без титульника
+%natbib,     % использовать пакет natbib для "сжатия" цитирований
 subf,        % использовать пакет subcaption для вложенной нумерации рисунков
 href,        % использовать пакет hyperref для создания гиперссылок
 colorlinks,  % цветные гиперссылки
@@ -17,6 +18,7 @@ colorlinks,  % цветные гиперссылки
 
 \usepackage[intlimits]{amsmath}
 \usepackage{amssymb,amsfonts}
+\usepackage{mathtools}
 \usepackage{cancel}
 
 \usepackage[T2A]{fontenc}
@@ -67,6 +69,13 @@ colorlinks,  % цветные гиперссылки
 \usepackage[labelsep=endash]{caption}
 \addto\captionsrussian{\renewcommand{\figurename}{Рисунок}}
 
+% Названия разделов ПРОПИСНЫМИ буквами
+%\renewcommand{\introname}{ВВЕДЕНИЕ}
+%\renewcommand{\conclusionname}{ЗАКЛЮЧЕНИЕ}
+
+% Тире в качестве маркера списка
+
+
 % Code
 %\usepackage[gobble=auto]{pythontex}
 
@@ -76,3 +85,7 @@ colorlinks,  % цветные гиперссылки
 \renewcommand{\listingscaption}{Листинг}
 
 \usepackage{lipsum}
+
+% Выделение текста, чтобы не забыть про правки
+\usepackage{todonotes}
+\newcommand{\hl}[1]{\todo[color=yellow,inline]{#1}}

@@ -74,7 +74,7 @@ colorlinks,  % цветные гиперссылки
 %\renewcommand{\conclusionname}{ЗАКЛЮЧЕНИЕ}
 
 % Тире в качестве маркера списка
-
+%
 
 % Code
 %\usepackage[gobble=auto]{pythontex}
@@ -87,5 +87,15 @@ colorlinks,  % цветные гиперссылки
 \usepackage{lipsum}
 
 % Выделение текста, чтобы не забыть про правки
+\usepackage[dvipsnames]{xcolor}
 \usepackage{todonotes}
 \newcommand{\hl}[1]{\todo[color=yellow,inline]{#1}}
+\newcommand{\cbox}[1]{\colorbox{BurntOrange}{#1}}
+
+% Дополнительные символы
+\newcommand{\degs}{\ensuremath{^{\circ}}}
+
+% Сокращения математики
+\newcommand{\kxp}{\prescript{\text{к}}{}{x}_P}
+\newcommand{\kyp}{\prescript{\text{к}}{}{y}_P}
+\newcommand{\kzp}{\prescript{\text{к}}{}{z}_P}

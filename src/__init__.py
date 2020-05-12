@@ -19,7 +19,7 @@ def main(video_file: str,
     checker = Checker.load_json(filepath=checker_json)
     scanner = Scanner.load_json(filepath=scanner_json, camera=camera, checker=checker)
 
-    # Acquire depth map and point cloud
+    # Acquire depth map and pointcloud
     scanner.scan()
     scanner.bind_coordinates()
     depthmap, pointcloud = scanner.depthmap, scanner.pointcloud

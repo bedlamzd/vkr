@@ -59,7 +59,6 @@ class Scanner:
         # TODO: write parameters validation
         # TODO: Sequence -> numpy.ndarray conversion
         # TODO: default values assignment
-        # TODO: extraction mode names formatting and aliasing (e.g. 'Laplace of Gauss'|'log' -> 'laplace_of_gauss')
         if img_proc_opts is None:
             img_proc_opts = {'mask': True, 'color_filt': True, 'roi': True}
         else:

@@ -4,6 +4,7 @@ import numpy as np
 import cv2
 
 # TODO: документация и комментарии
+from tools.general import normalize
 from tools.images import find_center_and_rotation, find_contours
 from tools.pointcloud import mls_height_apprx
 
@@ -32,6 +33,16 @@ class Cookie:
         self._length = None  # shorthand for min_bounding_box_mm[1,1] в мм
         self._area = None
         self._max_height = None  # максимальная высота в контуре ограничивающем печенье в мм
+
+    @property
+    def depthmap(self):
+        depthmap = self.pointcloud[..., -1]
+        try:
+            depthmap[np.isnan(depthmap)] = np.min(depthmap[np.isfinite(depthmap)])
+        except ValueError:
+            depthmap[np.isnan(depthmap)] = 0
+        depthmap = normalize(depthmap, 255).astype(np.uint8)
+        return depthmap
 
     @property
     def pointcloud(self) -> np.ndarray:

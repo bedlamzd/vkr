@@ -749,14 +749,20 @@ class Drawing:
         print('файл прочтён')
 
     def slice(self, step: float = 1.0):
-        for element in self.elements:
+        # TODO: logging instead of print
+        print('Slicing drawing...')
+        for count, element in enumerate(self.elements, 1):
             element.slice(step)
         self._length = None
-        print(f'Объекты нарезаны с шагом {step:2.1f} мм')
+        print(f'Drawing sliced with step {step:2.1f} mm')
 
     def add_z(self, height_map: Optional[np.ndarray] = None, point_apprx=False, **kwargs):
-        for element in self.elements:
+        # TODO: logging instead of print
+        print('Adding Z coordinate...')
+        for count, element in enumerate(self.elements, 1):
             element.add_z(height_map, point_apprx=point_apprx, **kwargs)
+            print(f'    {count:03d}/{len(self.elements)} elements processed')
+        print('Done adding Z coordinate.')
         self._length = None
 
     def organize_entities(self, entities: List[Element], start_point: Vector = NULLVEC):

@@ -208,6 +208,8 @@ class Scanner:
 
     def scan(self):
         # self.camera.process_on_iteration = True
+        # TODO: logging instead of print
+        print('Scanning...')
         for img in self.camera:
             processed = self.camera.process_img(img)
             laser = self.extract_laser(processed)
@@ -215,6 +217,9 @@ class Scanner:
             global_coords = self.local2global_coords(local_coords)
             self._cloud[self.camera.prev_frame_idx] = global_coords
             self.camera.tvec += self.velocity / self.camera.fps  # using FPS
+            # TODO: logging instead of print
+            print(f'    {self.camera.next_frame_idx:04d}/{self.camera.frame_count} frames processed')
+        print('Scan complete.')
             # camera.tvec[0] += camera.frame_timing * self.velocity - camera.tvec[0] # using timing
         # self.camera.process_on_iteration = False
 

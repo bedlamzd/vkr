@@ -146,9 +146,9 @@ def get_nearest(point, height_map: np.ndarray, planar=True):
     if len(point) < 2 or len(point) > 3:
         raise TypeError('only 2D or 3D points')
     if planar:
-        return np.unravel_index(np.sum(np.abs(height_map[..., :2] - point[:2]), axis=2).argmin(), height_map.shape[:2])
+        return np.unravel_index(np.nanargmin(np.sum(np.abs(height_map[..., :2] - point[:2]), axis=-1)), height_map.shape[:2])
     else:
-        return np.unravel_index(np.sum(np.abs(height_map[..., :] - point), axis=2).argmin(), height_map.shape[:2])
+        return np.unravel_index(np.nanargmin(np.sum(np.abs(height_map - point), axis=-1)), height_map.shape[:2])
 
 
 def get_furthest(point, height_map: np.ndarray, planar=True):

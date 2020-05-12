@@ -1,9 +1,10 @@
 /.idea
 /venv*
-/img
+files
 __pycache__/
 /tex/pythontex*
 *.ini
+*.json
 *.mp4
 *.png
 *.txt
@@ -20,3 +21,4 @@ __pycache__/
 *.bcf
 *.xml
 *.toc
+*.gcode

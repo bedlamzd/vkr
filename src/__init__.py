@@ -1,9 +1,8 @@
 import cv2
 
-import globalValues
-from Camera import Camera
-from Scanner import Scanner
-from StartDetector import Checker
+from camera import Camera
+from scanner import Scanner
+from checker import Checker
 from cookie import find_cookies, process_cookies
 from elements import Drawing
 from gcoder import Gcoder

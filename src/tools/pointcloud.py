@@ -5,7 +5,7 @@ import numpy as np
 from ezdxf.math import Vector
 from numpy.polynomial.polynomial import polyval2d
 
-from Errors import Error
+from errors import Error
 from tools.math import inside_polygon, mls3d
 
 X, Y, Z = 0, 1, 2

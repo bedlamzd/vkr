@@ -6,7 +6,7 @@ import imutils
 
 from typing import Union, List, Optional
 
-from Camera import Camera
+from camera import Camera
 from tools.general import nothing
 
 
@@ -227,7 +227,7 @@ def decor_stream2img(img_func):
 
 
 def fast_calibration(device, board_size=(6, 4), manual=True, autofocus=False, *args, **kwargs):
-    from Camera import Camera
+    from camera import Camera
 
     cam = Camera(cap=cv2.VideoCapture(device))
     if not autofocus:
@@ -241,7 +241,7 @@ def fast_calibration(device, board_size=(6, 4), manual=True, autofocus=False, *a
 
 
 def fast_pose(device, board_size=(6, 4), autofocus=False, *args, **kwargs):
-    from Camera import Camera, CameraCalibrator
+    from camera import Camera, CameraCalibrator
 
     # TODO: make matrix required or positional
     if 'mtx' not in kwargs:
@@ -267,7 +267,7 @@ def fast_pose(device, board_size=(6, 4), autofocus=False, *args, **kwargs):
 
 
 def take_shot(device, dir='.', name_template='shot%d'):
-    from Camera import Camera
+    from camera import Camera
 
     i = 0
     cam = Camera(cap=cv2.VideoCapture(device))

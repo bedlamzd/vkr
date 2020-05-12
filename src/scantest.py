@@ -51,7 +51,7 @@ cap = cv2.VideoCapture(r"C:\Users\bedla\YandexDisk\Диплом Борисов\�
 camera = Scanner.Camera(mtx=mtx, rot_mtx=rot_mtx, tvec=tvec, cap=cap, roi=roi)
 scaner = Scanner.Scanner(camera=camera, height=height, angle=angle, velocity=velocity, img_proc_opts=img_proc_opts,
                          extraction_opts=extraction_opts, extraction_mode=extraction_mode)
-scalibrator = Scanner.ScannerCalibrator(scaner)
+scalibrator = scanner.ScannerCalibrator(scaner)
 
 ## уравнение координат
 # расчёт в СК камеры
@@ -111,7 +111,7 @@ def test_scan_calibration_artificial(randomize=False, ampl=1, shift=-0.5):
         images.append(img)
     for pixel, y, height in real_data: print(f'pixel = {pixel:6.2f}, y = {y:6.2f}, height = {height:6.2f}')
 
-    scalibrator = Scanner.ScannerCalibrator(scaner)
+    scalibrator = scanner.ScannerCalibrator(scaner)
     scalibrator.calibrate_from_images(images, heights)
 
 
@@ -143,7 +143,7 @@ def test_scan_calibration_real():
 
 
 def test_camera_calibration(device, board_size=(6, 4), manual=True, autofocus=False, *args, **kwargs):
-    from Camera import Camera
+    from camera import Camera
 
     cam = Camera(cap=cv2.VideoCapture(device))
     if not autofocus:

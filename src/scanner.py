@@ -3,8 +3,8 @@ import json
 import numpy as np
 from numpy import tan
 from typing import Tuple, Optional, Sequence, List
-from Camera import Camera
-from StartDetector import Checker
+from camera import Camera
+from checker import Checker
 from tools.general import normalize, avg
 
 from itertools import combinations

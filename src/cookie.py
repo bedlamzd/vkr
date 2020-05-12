@@ -218,7 +218,7 @@ def find_cookies(img: Union[np.ndarray, str], height_map: 'np.ndarray') -> (List
         height_map_masked = height_map.copy()
         height_map_masked[..., Z][mask == 0] = 0
         height_map_fragment = height_map_masked[row:row + h, col:col + w]
-        cookie = Cookie(height_map=height_map_fragment, contour_global=contour, bounding_box=(col, row, w, h))
+        cookie = Cookie(pointcloud=height_map_fragment, contour_global=contour, bounding_box=(col, row, w, h))
         cookies.append(cookie)
         cv2.circle(result, cookie.center_pixel, 3, (0, 255, 0), -1)
     return cookies, result

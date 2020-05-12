@@ -11,13 +11,13 @@ X, Y, Z = 0, 1, 2
 
 
 class Cookie:
-    def __init__(self, height_map=None, contour_global=None, bounding_box=None, contour_center=None):
+    def __init__(self, pointcloud=None, contour_global=None, bounding_box=None, contour_center=None):
         self._contour_global = contour_global  # контур из целой карты высот (col, row)
         self._contour_local = None  # контур в локальной карте высот (col, row)
         self._contour_center = contour_center
         # TODO: изменить координаты на (X,Y) для избежания путаницы с углом поворота печенья
         self._contour_mm = None  # контур в мм в глобальных координатах (Y,X)
-        self._height_map = height_map  # область печеньки на карте высот
+        self._pointcloud = pointcloud  # область печеньки на карте высот
         self._center = None  # центр контура печенья в мм (X, Y, Z)
         self._center_true = None  # центр печенья с учетом искажения сканирования (X, Y, Z)
         self._center_pixel = None  # центр печенья в пикселях на целой карте высот (col, row)
@@ -34,8 +34,8 @@ class Cookie:
         self._max_height = None  # максимальная высота в контуре ограничивающем печенье в мм
 
     @property
-    def height_map(self) -> np.ndarray:
-        return self._height_map
+    def pointcloud(self) -> np.ndarray:
+        return self._pointcloud
 
     @property
     def contour_global(self) -> np.ndarray:
@@ -69,8 +69,8 @@ class Cookie:
             contour = self.contour_center_local
         else:
             raise Exception
-        contour_mm = np.asarray([[(self.height_map[point[0, 1], point[0, 0], Y],
-                                   self.height_map[point[0, 1], point[0, 0], X])]
+        contour_mm = np.asarray([[(self.pointcloud[point[0, 1], point[0, 0], Y],
+                                   self.pointcloud[point[0, 1], point[0, 0], X])]
                                  for point in contour if ~np.isnan(point).any()], dtype=np.float32)
         contour_mm = contour_mm[np.isfinite(contour_mm).all(axis=-1)]
         return contour_mm
@@ -134,7 +134,7 @@ class Cookie:
     @property
     def max_height(self) -> float:
         if self._max_height is None:
-            self._max_height = self.height_map[:, :, Z].max()
+            self._max_height = np.nanmax(self.pointcloud[..., Z])
         return self._max_height
 
     def contour_idx(self, contour='local') -> tuple:
@@ -148,7 +148,7 @@ class Cookie:
 
     def contour_coords(self, contour='local') -> np.ndarray:
         # TODO: повторяет по функционалу contour_mm, удалить последний и решить конфликты
-        return self.height_map[self.contour_idx(contour)]
+        return self.pointcloud[self.contour_idx(contour)]
 
     def contour_z_mean(self, contour='local') -> float:
         return self.contour_coords(contour)[..., Z].mean()
@@ -164,7 +164,7 @@ class Cookie:
 
     def find_center_and_rotation(self):
         center, theta = find_center_and_rotation(self.contour_mm('center'))
-        center_z = mls_height_apprx(self.height_map, center[::-1])
+        center_z = mls_height_apprx(self.pointcloud, center[::-1])
         center = (*center[::-1], center_z)  # простанственные координаты центра (свапнуты из-за opencv)
         rotation = pi / 2 - theta  # перевод в СК принтера
         self._center = center
@@ -175,7 +175,7 @@ class Cookie:
         return cv2.moments(self.contour_mm())['m00']
 
     def copy(self):
-        return self.__class__(self.height_map, self.contour_global, self.bounding_box, self.contour_center)
+        return self.__class__(self.pointcloud, self.contour_global, self.bounding_box, self.contour_center)
 
     __copy__ = copy
 

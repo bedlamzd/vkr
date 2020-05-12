@@ -606,7 +606,7 @@ class Drawing:
         organized bool: True if elements are ordered and contours are constructed
     """
 
-    def __init__(self, dxf=None, center: Vector = None, rotation: float = None):
+    def __init__(self, dxf, center: Vector = None, rotation: float = None):
         """
         :param dxf: открытый библиотекой рисунок
         :param center: смещение центра рисунка
@@ -619,13 +619,9 @@ class Drawing:
         self.organized = False  # type: bool
         self._length = None
         self._flat_length = None
-        if dxf is None:
-            self.dxf = None
-            self.modelspace = None
-        else:
-            self.dxf = dxf
-            self.modelspace = self.dxf.modelspace()
-            self.read_by_layer()
+        self.dxf = dxf
+        self.modelspace = self.dxf.modelspace()
+        self.read_by_layer()
         self._center, self._rotation = self.find_center_and_rotation()
         if center is not None:
             self.center = center

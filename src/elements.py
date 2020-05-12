@@ -8,6 +8,7 @@ Author: bedlamzd of MT.lab
 
 from typing import List, Union, Optional, Tuple, Dict
 from itertools import count
+import ezdxf
 from ezdxf.math.vector import Vector, NULLVEC
 from ezdxf.math.bspline import BSpline
 from re import findall
@@ -630,6 +631,11 @@ class Drawing:
             self.center = center
         if rotation is not None:
             self.rotation = rotation
+
+    @classmethod
+    def from_file(cls, dxf_path):
+        dxf = ezdxf.readfile(dxf_path)
+        return cls(dxf)
 
     def __str__(self):
         return f'Геометрический центр рисунка: X: {self.center[X]:4.2f} Y: {self.center[Y]:4.2f} мм\n' + \

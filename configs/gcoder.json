@@ -1,0 +1,14 @@
+{
+  "tolerance": 0.5,
+  "z_offset": 0.0,
+  "extr_coef": 0.041,
+  "extr_mult": 1,
+  "retraction": 2.05,
+  "p0": 0.05,
+  "p1": 0.15,
+  "p2": 0.9,
+  "slice_step": 1.0,
+  "F0": 2500,
+  "F1": 1000,
+  "point_apprx": "mls"
+}

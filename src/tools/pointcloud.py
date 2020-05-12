@@ -204,25 +204,25 @@ def apprx_point_height(point: Vector, height_map: np.ndarray = None, point_apprx
         return 0
 
 
-def mls_height_apprx(height_map, point, **kwargs) -> float:
+def mls_height_apprx(pointcloud, point, support_radius = 1., degree = (1, 1)) -> float:
     """
     аппроксимация высоты точки по облаку с помощью moving least squares
 
-    :param height_map: карта высот
+    :param pointcloud: карта высот
     :param point: точка для аппроксимации
     :param kwargs:
         support_radius - радиус в пределах которого учитывать точки (default - 1.)
         degree - порядок полинома для аппроксимации в формате (xm, ym) (default - (1,1))
     :return:
     """
-    support_radius = kwargs.get('support_radius', 1.)
-    degree = kwargs.get('degree', (1, 1))
-    data = height_map[np.isfinite(height_map).all(axis=-1)].copy().reshape(-1, 3)
-    cond = np.sum(np.power(data[:, :2] - point[:2], 2), axis=1) <= support_radius ** 2
+    data = pointcloud[~np.isnan(pointcloud).any(axis=-1)].reshape(-1, 3)
+    cond = np.sum(np.power(data[:, :2] - point[:2], 2), axis=-1) <= support_radius ** 2
     data = data[cond] - (point[X], point[Y], 0)
     if data.size >= ((degree[0] + 1) * (degree[1] + 1)):
         c = mls3d(data, (0, 0), support_radius, degree).reshape((degree[0] + 1, degree[1] + 1))
         z = polyval2d(0, 0, c)
         return z
+    elif data.size > 0:
+        return np.mean(data)
     else:
         return 0

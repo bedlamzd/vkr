@@ -22,3 +22,5 @@ __pycache__/
 *.xml
 *.toc
 *.gcode
+*.bbl
+*.blg

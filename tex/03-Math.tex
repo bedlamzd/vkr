@@ -24,6 +24,8 @@
         \subsection{Модель в системе координат принтера}
             Первый расчёт производится в системе координат принтера. Эта модель основывается на реальных размерах сборки и отражает реальную конструкцию модуля. В данном варианте предполагается, что стол -- рабочая поверхность -- находится в плоскости $ XY $, лазер излучает перпендикулярно столу и камера имеет поворот только вокруг оси $ Y $. При этом считается, что лазер не имеет поворота вокруг своей оси.
 
+            Похожий метод расчёта используется в работе Machine vision system for curved surface inspection\cite{Lee2000}.
+
             \begin{figure}[!ht]\label{pic:first_model}
                 \centering
                 \includegraphics[width=0.75\linewidth]{first_model_xz}
@@ -100,11 +102,13 @@
             
             Таким образом приходим к следующим уравнениям
             \begin{equation}\label{eq:first_model}
-                \begin{aligned}
-                    x_P &= x_\text{к}- H\tg\left(\alpha + \beta_0\right)\\
-                    y_P &= y_\text{к} + (H - z_P)\dfrac{\Delta u}{f\cos\alpha}\\
-                    z_P &= H\dfrac{\sin\left(\beta - \beta_0\right)}{\cos\left(\alpha + \beta_0\right)\sin\left(\alpha + \beta\right)}
-                \end{aligned}
+                \left\{
+                    \begin{aligned}
+                        x_P &= x_\text{к}- H\tg\left(\alpha + \beta_0\right)\\
+                        y_P &= y_\text{к} + (H - z_P)\dfrac{\Delta u}{f\cos\alpha}\\
+                        z_P &= H\dfrac{\sin\left(\beta - \beta_0\right)}{\cos\left(\alpha + \beta_0\right)\sin\left(\alpha + \beta\right)}
+                    \end{aligned}
+                \right.
             \end{equation}
 
             Преимущества этой модели:
@@ -194,29 +198,30 @@
                 \kzp = H \dfrac{\tg\alpha}{\tg\alpha + \frac{\Delta v}{f}}
             \end{equation}
             Далее из $ \triangle C\cbox{\text{НЕТ БУКВЫ}}P $ очевидно, что
-            \begin{equation}
+            \begin{equation}\label{eq:kyp}
                 \kyp = \kzp \tg\beta = H \dfrac{\tg\alpha\frac{\Delta v}{f}}{\tg\alpha + \frac{\Delta v}{f}}
             \end{equation}
             аналогично для $ \kxp $
-            \begin{equation}
-                \kxp = H \dfrac{\tg\alpha\frac{\Delta u}{f}}{\tg\alpha + \frac{\Delta v}{f}}
+            \begin{equation}\label{eq:kxp}
+                \kxp =\kzp \tg\gamma = H \dfrac{\tg\alpha\frac{\Delta u}{f}}{\tg\alpha + \frac{\Delta v}{f}}
             \end{equation}
-            где $ \Delta u = u_P-u_0 $.
+            где $ \tg\gamma = \dfrac{\Delta u}{f} $ -- угол падения луча лазера на матрицу в плоскости $ XZ $, $ \Delta u = u_P-u_0 $.
             
             В результате для системы координат камеры получаем:
             \begin{equation}\label{eq:second_model}
-                \begin{aligned}
-                    \kxp = H\frac{\tg\alpha\frac{\Delta u}{f}}{\tg\alpha+\frac{\Delta v}{f}}\\
-                    \kyp = H\frac{\tg\alpha\frac{\Delta v}{f}}{\tg\alpha+\frac{\Delta v}{f}}\\
-                    \kzp = H\frac{\tg\alpha}{\tg\alpha+\frac{\Delta v}{f}}
-                \end{aligned}
+                \left\{
+                    \begin{aligned}
+                        \kxp = H\frac{\tg\alpha\frac{\Delta u}{f}}{\tg\alpha+\frac{\Delta v}{f}}\\
+                        \kyp = H\frac{\tg\alpha\frac{\Delta v}{f}}{\tg\alpha+\frac{\Delta v}{f}}\\
+                        \kzp = H\frac{\tg\alpha}{\tg\alpha+\frac{\Delta v}{f}}
+                    \end{aligned}
+                \right.
             \end{equation}
             
             Для перевода в систему координат принтера:
-            \begin{equation}
-                \label{eq:coord_world}
+            \begin{equation}\label{eq:coord_world}
                 \begin{pmatrix}
-                    x\\y\\z
+                    x_P\\y_P\\z_P
                 \end{pmatrix}
                 =
                 R
@@ -244,7 +249,77 @@
             
             В этом методе главными параметрами являются высота камеры над рабочей плоскостью и угол между камерой и лазером, но они рассчитываются теоретически и не совпадают с аналогичными из предыдущего метода.
         \subsection{Выбор модели}
+            Сравнивая модели мы видим, недостатки второй модели менее серьёзны чем первой, а также что вторая модель не имеет недостатков первой модели. В частности расчёт в системе координат камеры упрощает эксплуатацию модуля, т.к. отсутствует необходимость повторных измерений параметров при изменении положения внешних по отношению к модулю элементов (например, перемещение стола). Также меньшее количество допущений для второй модели позволяет добиться более точных результатов не имеющих пространственных искажений (например, растяжение сцены), которые могут возникать в следствии дополнительного неучтенного наклона камеры.
+            Таким образом более выгодным вариантом расчёта является вторая модель.
+            
+            \sloppy Использование этой модели требует дополнительных предварительных расчётов, для использования, а именно -- расчёт положения камеры относительно системы координат принтера и расчёт параметров модуля $ H $ и $\alpha$. Расчёт положения камеры -- матрицы поворота $ R $ и координат $ \left(x_\text{к},\,y_\text{к},\,z_\text{к}\right) $ -- можно произвести средствами библиотеки opencv используя специальный шахматный паттерн (подробнее в главе \ref{chap:algorithms}). Для расчёта параметров модуля необходимо вывести соответствующий расчёт на основе уравнений \ref{eq:second_model} \ref{eq:coord_world}, что делается в разделе \ref{sec:scan_calib}.
 
     \section{Оценка теоретической погрешности}\label{sec:error}
-    
-    \section{Калибровка сканера}
+        \cbox{НЕ ЗАБЫТЬ СДЕЛАТЬ}
+    \section{Калибровка сканера}\label{sec:scan_calib}
+        Для калибровки сканера -- расчёта параметров $ H $ и $\alpha$ -- необходимо вывести уравнения, в которых используя известные высоты эталонов можно рассчитать искомые величины.
+        Для этого воспользуемся уравнением координаты $ \kzp $ из \ref{eq:second_model}
+        \begin{equation}
+            \kzp = H\frac{\tg\alpha}{\tg\alpha+\frac{\Delta v}{f}}
+        \end{equation}
+        Имея два таких уравнения для разных высот $ \kz{i} $ и $ \kz{k} $ и соответствующих им разностей пикселей $ \Delta v_i $ и $ \Delta v_k $ получаем следующую систему уравнений
+        \begin{equation}
+            \left\{
+                \begin{aligned}
+                    \kz{i} &= H\frac{\tg\alpha}{\tg\alpha+\frac{\Delta v_i}{f}}\\
+                    \kz{k} &= H\frac{\tg\alpha}{\tg\alpha+\frac{\Delta v_k}{f}}
+                \end{aligned}
+            \right.
+        \end{equation}
+        разделив $ \kz{i} $ на $ \kz{k} $ получаем уравнение с одной неизвестной $ \tg\alpha $
+        \begin{equation}
+            \dfrac{\kz{i}}{\kz{k}} = \dfrac{\tg\alpha + \frac{\Delta v_k}{f}}{\tg\alpha+\frac{\Delta v_i}{f}}
+        \end{equation}
+        проделав небольшие преобразования приходим к окончательному уравнению для $ \tg\alpha $
+        \begin{equation}
+            \tg\alpha = \dfrac{\kz{k}\frac{\Delta v_k}{f} - \kz{i}\frac{\Delta v_i}{f}}{\kz{i} - \kz{k}}
+        \end{equation}
+        Конкретное значение угла в данном случае неважно поскольку в расчётах используется именно $ \tg\alpha $, поэтому можно оставить так.
+        Подставляя полученное равенство в любое уравнение в системе после преобразований получаем уравнение для $ H $
+        \begin{equation}
+            H = \kz{i}\kz{k}\dfrac{\Delta v_k-\Delta v_i}{\kz{k}\Delta v_k - \kz{i}\Delta v_i}
+        \end{equation}
+        Таким образом получаем систему уравнений, позволяющую рассчитать параметры сканера зная координаты двух точек $ \kz{i} $ и $ \kz{k} $ в системе камеры и соответствующих им разностей координат в плоскости изображения.
+        \begin{equation}\label{eq:calib1}
+            \left\{
+                \begin{aligned}
+                    \tg\alpha &= \dfrac{\kz{k}\frac{\Delta v_k}{f} - \kz{i}\frac{\Delta v_i}{f}}{\kz{i} - \kz{k}}\\
+                    H &= \kz{i}\kz{k}\dfrac{\Delta v_k-\Delta v_i}{\kz{k}\Delta v_k - \kz{i}\Delta v_i}
+                \end{aligned}
+            \right.
+        \end{equation}
+        Или можно переписать данную систему через углы падения луча лазера на матрицу $ \beta $ и получить следующую систему
+        \begin{equation}\label{eq:calib2}
+            \left\{
+                \begin{aligned}
+                    \tg\alpha &= \dfrac{\kz{k}\tg\beta_k - \kz{i}\tg\beta_i}{\kz{i} - \kz{k}}\\
+                    H &= \kz{i}\kz{k}\dfrac{\tg\beta_k-\tg\beta_i}{\kz{k}\tg\beta_k - \kz{i}\tg\beta_i}
+                \end{aligned}
+            \right.
+        \end{equation}
+        Однако полученная система уравнений зависит от координат в системе камеры, которые сложно измерить на практике. Необходимо привести уравнения к использованию координат из системы принтера. Данные координаты гораздо легче получить, т.к. возможно произвести прямые измерения этих величин. Для перевода координат из системы камеры в систему принтера воспользуемся уравнением \ref{eq:coord_world}. Согласно данному уравнению координата $ z_P $ точки $ P $ в системе принтера выражается следующим образом
+        \begin{equation}
+            z_P = r_{31}\kxp +r_{32}\kyp+r_{33}\kzp + z_\text{к}
+        \end{equation}
+        подставляя сюда уравнения \ref{eq:kxp} и \ref{eq:kyp} получаем
+        \begin{equation}
+            z_P = r_{31}\kzp\tg\gamma +r_{32}\kzp\tg\beta+r_{33}\kzp + z_\text{к}
+        \end{equation}
+        соответственно $ \kzp $ равняется
+        \begin{equation}\label{eq:calib_kzp}
+            \kzp = \dfrac{z_p - z_\text{к}}{r_{31}\tg\gamma +r_{32}\tg\beta+r_{33}}
+        \end{equation}
+        
+        Таким образом для калибровки необходимо выполнить следующее
+        \begin{enumerate}
+            \item Измерить координату $ z $ минимум пары эталонов в системе принтера
+            \item Для каждого эталона определить $ \Delta v $ или $ \tg\beta $
+            \item Перевести координаты в систему камеры подставив в уравнение \ref{eq:calib_kzp}
+            \item Подставить полученные координаты и соответствующие углы в уравнение \ref{eq:calib1} или \ref{eq:calib2}
+        \end{enumerate}
+        Для лучшей точности рекомендуется выбирать пары эталонов с наибольшей разницей в высоте, а также проводить множество расчётов с различными парами эталонов для усреднения результатов и минимизации ошибки измерений.

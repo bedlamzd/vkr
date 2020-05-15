@@ -48,6 +48,12 @@ colorlinks,  % цветные гиперссылки
 
 \addbibresource{vkr.bib}
 
+%% Возвращаем запись «Режим доступа» %%%
+\DefineBibliographyStrings{english}{%
+    urlfrom = {Mode of access}
+}
+\DeclareFieldFormat{url}{\bibstring{urlfrom}\addcolon\space\url{#1}}
+
 \usepackage{graphicx}
 % Плавающие рисунки "в оборку".
 \usepackage{wrapfig}

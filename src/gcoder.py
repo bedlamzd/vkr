@@ -122,6 +122,7 @@ class Gcoder:
         self.slice_step = slice_step
         self.z_offset = z_offset
         self.point_apprx = point_apprx
+        self.apprx_param = dict()
 
         self.F0 = F0
         self.F1 = F1
@@ -166,7 +167,7 @@ class Gcoder:
             gcode.comment(f'{count:3d} cookie')
             drawing.center = cookie.center[:2]
             drawing.rotation = cookie.rotation
-            drawing.add_z(cookie.pointcloud if pointcloud is None else pointcloud, point_apprx=self.point_apprx)
+            drawing.add_z(cookie.pointcloud if pointcloud is None else pointcloud, point_apprx=self.point_apprx, **self.apprx_param)
             for layer_index, layer in enumerate(sorted(drawing.layers.values(), key=lambda x: x.priority)):
                 # TODO: logging instead of print
                 print(f'    Processing layer #{layer_index}...')

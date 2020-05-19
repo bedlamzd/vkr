@@ -133,6 +133,11 @@ def get_max_height_idx(height_map: np.ndarray):
     """
     return np.unravel_index(height_map[..., Z].argmax(), height_map.shape[:2])
 
+def knn(point, height_map: np.ndarray, k=1):
+    data = np.sum(np.abs(height_map[..., :2] - point[:2]), axis=-1)
+    points = height_map.reshape(-1, 3)[data.argsort(axis=None)][:k]
+    z = np.average(points[..., 2])
+    return z
 
 def get_nearest(point, height_map: np.ndarray, planar=True):
     """
@@ -146,7 +151,8 @@ def get_nearest(point, height_map: np.ndarray, planar=True):
     if len(point) < 2 or len(point) > 3:
         raise TypeError('only 2D or 3D points')
     if planar:
-        return np.unravel_index(np.nanargmin(np.sum(np.abs(height_map[..., :2] - point[:2]), axis=-1)), height_map.shape[:2])
+        return np.unravel_index(np.nanargmin(np.sum(np.abs(height_map[..., :2] - point[:2]), axis=-1)),
+                                height_map.shape[:2])
     else:
         return np.unravel_index(np.nanargmin(np.sum(np.abs(height_map - point), axis=-1)), height_map.shape[:2])
 
@@ -186,25 +192,25 @@ def apprx_point_height(point: Vector, height_map: np.ndarray = None, point_apprx
     :return: аппроксимированная высота точки
     """
     ind = ((0, 0, -1, -1), (0, -1, -1, 0))
-    if height_map is None and point_apprx != 'constant':
-        raise Error('cannot approximate height without point cloud. use constant height or provide cloud')
     if point_apprx == 'constant':
         return kwargs.get('height', 0)
-    elif inside_polygon(point, height_map[ind][:, :2]):
-        if point_apprx == 'mls':
-            return mls_height_apprx(height_map, point, **kwargs)
-        elif point_apprx == 'nearest':
-            idx_first = get_nearest(point, height_map, True)
-            first = Vector(height_map[idx_first])
-            return first.z
-        else:
-            raise Error(f'no such algorithm {point_apprx}')
-    else:
+
+    assert not height_map is None
+    if not inside_polygon(point, height_map[ind][:, :2]):
         print(f'point {point} not in the area')
         return 0
 
+    if point_apprx == 'nearest':
+        return knn(point, height_map)
+    if point_apprx == 'knn':
+        return knn(point, height_map, **kwargs)
+    elif point_apprx == 'mls':
+        return mls_height_apprx(height_map, point, **kwargs)
+    else:
+        raise Error(f'no such algorithm {point_apprx}')
 
-def mls_height_apprx(pointcloud, point, support_radius = 1., degree = (1, 1)) -> float:
+
+def mls_height_apprx(pointcloud, point, support_radius=1., degree=(1, 1)) -> float:
     """
     аппроксимация высоты точки по облаку с помощью moving least squares
 

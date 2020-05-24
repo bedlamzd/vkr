@@ -8,34 +8,32 @@
     Перед эксплуатацией модуля необходимо провести калибровку камеры и сканера в целом с помощью специального паттерна. Калибровка камеры позволяет получить матрицу её внешних и внутренних параметров -- положение камеры в пространстве, фокусное расстояние и реальный центр изображения.
     Калибровка сканера позволяет получить параметры $ H $ и $ \alpha $ по формулам из раздела \ref{sec:scan_calib}. 
     
-    \cbox{ВСТАВИТЬ ВЕРНЫЕ ИЗОБРАЖЕНИЯ}
     \begin{figure}[H]
         \centering
-        \includegraphics[width=0.5\linewidth]{camera_calibration}
+        \includegraphics[width=0.4\linewidth]{camera_calibration}
         \caption{Процесс калибровки камеры}
     \end{figure}
     
     Эксплуатация системы происходит следующим образом. В рабочую зону располагают объекты, закрывают дверцу прототипа и выключается освещение. По команде оператора начинается процесс съёмки видео для обработки. По окончанию съёмки файл отправляется на компьютер, который обрабатывает полученные данные по алгоритму описанному в главе \ref{chap:algorithms}.
     
-    \cbox{ВСТАВИТЬ ВЕРНЫЕ ИЗОБРАЖЕНИЯ}
     \begin{figure}[H]
         \centering
-        \includegraphics[height=0.4\textheight]{pointcloud}
+        \includegraphics[width=0.4\textheight]{scan_example}
+        \caption{Процесс обработки видео}
+    \end{figure}
+    \begin{figure}[H]
+        \centering
+        \includegraphics[width=0.4\textheight]{pointcloud}
         \caption{Облако точек сцены}
     \end{figure}
     \begin{figure}[H]
-        \centering
-        \includegraphics[height=0.4\textheight]{pointcloud_contours}
-        \caption{Наложенный контур}
+        \begin{subfigure}{0.5\linewidth}
+            \includegraphics[width=\linewidth]{pointcloud_gcode_1}
+        \end{subfigure}
+        \begin{subfigure}{0.5\linewidth}
+            \includegraphics[width=\linewidth]{pointcloud_gcode_2}
+        \end{subfigure}
+        \caption{Наложение контура из dxf-файла на объект}
     \end{figure}
     
     После обработки данных сгенерированный gcode отправляется обратно в прототип на исполнение.
-    
-    \cbox{ВСТАВИТЬ ВЕРНЫЕ ИЗОБРАЖЕНИЯ}
-    \begin{figure}[H]
-        \centering
-        \includegraphics[height=0.4\textheight]{cookie}
-        \caption{Готовое изделие}
-    \end{figure}
-    
-    Нанесение глазури производилось с отступом 0.2 мм от поверхности изделия, что позволяет сказать, что точность сканирования удовлетворяет заданным требованиям. 

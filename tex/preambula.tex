@@ -5,7 +5,7 @@ notitlepage, % без титульника
 %natbib,     % использовать пакет natbib для "сжатия" цитирований
 subf,        % использовать пакет subcaption для вложенной нумерации рисунков
 href,        % использовать пакет hyperref для создания гиперссылок
-colorlinks,  % цветные гиперссылки
+%colorlinks,  % цветные гиперссылки
 %fixint,     % включить прямые знаки интегралов
 ]{disser}
 
@@ -13,6 +13,7 @@ colorlinks,  % цветные гиперссылки
   a4paper, mag=1000,
   left=2.5cm, right=1cm, top=2cm, bottom=2cm, headsep=0.7cm, footskip=1cm
 ]{geometry}
+
 
 \usepackage{cmap}
 
@@ -28,7 +29,7 @@ colorlinks,  % цветные гиперссылки
 \usepackage[autostyle]{csquotes}
 
 % Шрифт Times в тексте как основной
-%\usepackage{tempora}
+\usepackage{tempora}
 % альтернативный пакет из дистрибутива TeX Live
 %\usepackage{cyrtimes}
 
@@ -94,10 +95,10 @@ colorlinks,  % цветные гиперссылки
 \usepackage{pdfpages}
 
 % Выделение текста, чтобы не забыть про правки
-\usepackage[dvipsnames]{xcolor}
-\usepackage{todonotes}
-\newcommand{\hl}[1]{\todo[color=yellow,inline]{#1}}
-\newcommand{\cbox}[1]{\colorbox{BurntOrange}{#1}}
+%\usepackage[dvipsnames]{xcolor}
+%\usepackage{todonotes}
+%\newcommand{\hl}[1]{\todo[color=yellow,inline]{#1}}
+%\newcommand{\cbox}[1]{\colorbox{BurntOrange}{#1}}
 
 % Дополнительные символы
 \newcommand{\degs}{\ensuremath{^{\circ}}}
